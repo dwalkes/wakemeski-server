@@ -2,6 +2,8 @@
 	
 	header( "Content-Type: text/plain" );
 	
+	//TODO get 48 hour snow data
+	
 	//first declare the valid locations
 	$locations = array();
 	$locations["OSOALP"] = "1";
@@ -108,6 +110,15 @@ function cache_summary($location, $report_date, $report)
 // returns an array of list(metric, measurment)
 function get_report_summary($lines, $data_start, $columns)
 {
+	global $report_date;
+
+	//first thing: get the current report time
+	$parts = preg_split("/\s+/", $lines[$data_start]);
+	$hour = $parts[3];
+	if( $hour != 0 ) $hour = $hour/100;
+	$report_date = $parts[1].'/'.$parts[2].' '.$hour.':00';
+
+	//now find the data
 	$report_data = array();
 	for( $i = $data_start; $i < count($lines); $i++ )
 	{
