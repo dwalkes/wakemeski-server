@@ -2,23 +2,70 @@
 	
 	header( "Content-Type: text/plain" );
 	
-	//TODO Add some caching logic to store a file up to 20 minutes so that
-	// we don't pound the NWAC site.
+	//first declare the valid locations
+	$locations = array();
+	$locations["OSOALP"] = "1";
+	$locations["OSOCMT"] = "1";
+	$locations["OSOHUR"] = "1";
+	$locations["OSOMSR"] = "1";
+	$locations["OSOMTB"] = "1";
+	$locations["OSOSK9"] = "1";
+	$locations["OSOSNO"] = "1";
+	$locations["OSOWPS"] = "1";
+	$locations["OSOGVT"] = "1";
+	$locations["OSOMHM"] = "1";
+	
 
 	$location = $_GET['location'];
 	$url = 'http://www.nwac.us/products/'.$location;
-
-	$lines = get_report_as_lines($url);
 	
-	$report_date = trim($lines[1]);
-	
-	list($data_start, $columns) = get_report_columns($lines);
-	
-	$report = get_report_summary($lines, $data_start, $columns);
+	check_location($location);
 
-	print_summary($location, $report_date, $report);
+	$found_cache = have_cache($location);
+	if( !$found_cache )
+	{
+		$lines = get_report_as_lines($url);
+	
+		$report_date = trim($lines[1]);
+	
+		list($data_start, $columns) = get_report_columns($lines);
+	
+		$report = get_report_summary($lines, $data_start, $columns);
 
-function print_summary($location, $report_date, $report)
+		cache_summary($location, $report_date, $report);
+	}
+	
+	print file_get_contents("nwac_$location.txt");
+	print "cache.found=$found_cache\n";
+	
+function check_location($location)
+{
+	global $locations;
+	
+	if( !array_key_exists($location, $locations) )
+	{
+		print "ERROR: invalid location [$location]\n";
+		exit(1);
+	}
+}
+
+function have_cache($location)
+{
+	$file = "nwac_$location.txt";
+	if( is_readable($file))
+	{
+		//get modification time stamp. If its less than
+		//20 minutes old, use that copy
+		$mod = filemtime($file);
+		if( time() - $mod < 1200 ) //=60*20 = 20 minutes
+		{
+			return 1;	
+		}
+	}
+	return 0;
+}
+
+function cache_summary($location, $report_date, $report)
 {
 	$summary = array();
 	$summary['snow.daily'] = "";
@@ -46,12 +93,16 @@ function print_summary($location, $report_date, $report)
 		}
 	}
 	
-	print "location =  $location\n";
-	print "date = $report_date\n";
-	print "snow.total = ".$summary['snow.total']."\n";
-	print "snow.daily = ".$summary['snow.daily']."\n";
-	print "temp.readings = ".$summary['temp.readings']."\n";
-	print "wind.avg = ".$summary['wind.avg']."\n";
+	$fp = fopen("nwac_$location.txt", 'w');
+
+	fwrite($fp, "location =  $location\n");
+	fwrite($fp, "date = $report_date\n");
+	fwrite($fp, "snow.total = ".$summary['snow.total']."\n");
+	fwrite($fp, "snow.daily = ".$summary['snow.daily']."\n");
+	fwrite($fp, "temp.readings = ".$summary['temp.readings']."\n");
+	fwrite($fp, "wind.avg = ".$summary['wind.avg']."\n");
+	
+	fclose($fp);
 }
 
 // returns an array of list(metric, measurment)
