@@ -20,21 +20,24 @@
 
 	$location = $_GET['location'];
 	$url = 'http://www.nwac.us/products/'.$location;
+	$url48 = 'http://www.nwac.us/products/archive/'.$location.'.1';
 	
 	check_location($location);
 
 	$found_cache = have_cache($location);
 	if( !$found_cache )
 	{
+		//report 1 (the current day's info)
 		$lines = get_report_as_lines($url);
-	
-		$report_date = trim($lines[1]);
-	
 		list($data_start, $columns) = get_report_columns($lines);
-	
 		$report = get_report_summary($lines, $data_start, $columns);
+		
+		//report 2 (the 48 hour info)
+		$lines = get_report_as_lines($url48);
+		list($data_start, $columns) = get_report_columns($lines);
+		$report2 = get_report_summary($lines, $data_start, $columns);
 
-		cache_summary($location, $report_date, $report);
+		cache_summary($location, $report_date, $report, $report2);
 	}
 	
 	print file_get_contents("nwac_$location.txt");
@@ -67,7 +70,7 @@ function have_cache($location)
 	return 0;
 }
 
-function cache_summary($location, $report_date, $report)
+function cache_summary($location, $report_date, $report, $report2)
 {
 	$summary = array();
 	$summary['snow.daily'] = "";
@@ -79,19 +82,29 @@ function cache_summary($location, $report_date, $report)
 		list($name, $val) = $report[$i];
 		if(preg_match("/^Total Snow/", $name) )
 		{
-			$summary['snow.total'] .= $val." ";
+			$summary['snow.total'] .= $val.' ';
 		}
-		else if(preg_match("/Snow/", $name) )
+		else if(preg_match("/^24/", $name) )
 		{
-			$summary['snow.daily'] .= $val." ";
+			$summary['snow.daily'] .= "Today($val)";
 		}
 		else if(preg_match("/Temp/", $name) )
 		{
-			$summary['temp.readings'] .= $val." ";
+			$summary['temp.readings'] .= $val.' ';
 		}
 		else if(preg_match("/Wind/", $name) )
 		{
-			$summary['wind.avg'] .= $val." ";
+			$summary['wind.avg'] .= $val.' ';
+		}
+	}
+	
+	for( $i = 0; $i < count($report2); $i++ )
+	{
+		list($name, $val) = $report2[$i];
+		if(preg_match("/^24/", $name) )
+		{
+			
+			$summary['snow.daily'] .= " Yesterday($val)";
 		}
 	}
 	
@@ -103,6 +116,7 @@ function cache_summary($location, $report_date, $report)
 	fwrite($fp, "snow.daily = ".$summary['snow.daily']."\n");
 	fwrite($fp, "temp.readings = ".$summary['temp.readings']."\n");
 	fwrite($fp, "wind.avg = ".$summary['wind.avg']."\n");
+	fwrite($fp, "details.url=http://www.nwac.us/products/$location\n");
 	
 	fclose($fp);
 }
@@ -112,13 +126,7 @@ function get_report_summary($lines, $data_start, $columns)
 {
 	global $report_date;
 
-	//first thing: get the current report time
-	$parts = preg_split("/\s+/", $lines[$data_start]);
-	$hour = $parts[3];
-	if( $hour != 0 ) $hour = $hour/100;
-	$report_date = $parts[1].'/'.$parts[2].' '.$hour.':00';
-
-	//now find the data
+	//find each row data and parse its column info
 	$report_data = array();
 	for( $i = $data_start; $i < count($lines); $i++ )
 	{
@@ -137,6 +145,12 @@ function get_report_summary($lines, $data_start, $columns)
 		array_push($report_data, $report_cols);
 	}
 	
+	//now get the current report time from the last row of data
+	$parts = preg_split("/\s+/", $lines[$i-1]);
+	$hour = $parts[3];
+	if( $hour != 0 ) $hour = $hour/100;
+	$report_date = $parts[1].'/'.$parts[2].' '.$hour.':00';
+	
 	//build summaries for each column
 	$report = array();
 	for( $i = 0; $i < count($columns); $i++ )
@@ -149,7 +163,7 @@ function get_report_summary($lines, $data_start, $columns)
 			{
 				array_push($vals, $report_data[$j][$i]);
 			}
-			$val = get_average($vals);
+			$val = get_average($vals, true);
 			array_push($report, array($columns[$i][0], $val));
 		}
 		else if( preg_match("/temp/i", $columns[$i][0]) )
@@ -177,8 +191,15 @@ function get_report_summary($lines, $data_start, $columns)
 
 // looks through the data set to eliminate "bad" values and then returns an
 // average of the good ones.
-function get_average($numbers=array())
+function get_average($numbers=array(), $partial=false)
 {
+	if( $partial )
+	{
+		//this is going to allow us to only look at the last 6 hours
+		// of snow data. It should be enough to get good data
+		list($ign1, $ign2, $ign3, $numbers) = array_chunk($numbers, count($numbers)/4);
+	}
+
 	rsort($numbers);
 	$mid = (count($numbers) / 2);
 	$median = ($mid % 2 != 0) ? $numbers{$mid-1} : (($numbers{$mid-1}) + $numbers{$mid}) / 2;
@@ -190,6 +211,7 @@ function get_average($numbers=array())
 	$num = 0;
 	$total = 0;
 	$max = 0;
+	
 	for( $i = 0; $i < count($numbers); $i++ )
 	{
 		//if the number is within 200% of the median value
@@ -197,6 +219,7 @@ function get_average($numbers=array())
 		{
 			$num++;
 			$total += $numbers[$i];
+
 			if( $numbers[$i] > $max )
 				$max = $numbers[$i];
 		}
