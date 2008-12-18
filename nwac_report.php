@@ -2,8 +2,6 @@
 	
 	header( "Content-Type: text/plain" );
 	
-	//TODO get 48 hour snow data
-	
 	//first declare the valid locations
 	$locations = array();
 	$locations["OSOALP"] = "1";
@@ -32,10 +30,12 @@
 		list($data_start, $columns) = get_report_columns($lines);
 		$report = get_report_summary($lines, $data_start, $columns);
 		
-		//report 2 (the 48 hour info)
+		//report 2 (the 48 hour info) 
 		$lines = get_report_as_lines($url48);
 		list($data_start, $columns) = get_report_columns($lines);
+		$tmp = $report_date; //the next function will ovewrite the value
 		$report2 = get_report_summary($lines, $data_start, $columns);
+		$report_date = $tmp;
 
 		cache_summary($location, $report_date, $report, $report2);
 	}
@@ -172,14 +172,19 @@ function get_report_summary($lines, $data_start, $columns)
 			$low = 0;
 			for( $j = 0; $j < count($report_data); $j++ )
 			{
-				if( $j == 0 )
+				$val = $report_data[$j][$i];
+				if( is_numeric($val) )
 				{
-					$high = $low = $report_data[$j][$i];
+					if( $j == 0 )
+					{
+						$high = $low = $report_data[$j][$i];
+					}
+	
+					if( $val > $high )
+						$high = $val;
+					if( $val < $low )
+						$low = $val;
 				}
-				if( $report_data[$j][$i] > $high )
-					$high = $report_data[$j][$i];
-				if( $report_data[$j][$i] < $low )
-					$low = $report_data[$j][$i];
 			}
 
 			array_push($report, array($columns[$i][0], "$high/$low"));
