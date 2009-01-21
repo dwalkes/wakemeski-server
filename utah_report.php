@@ -17,7 +17,6 @@
 	if( $body )
 	{
 		$summary = get_summaries($body);
-		
 		$report = $summary[$location];
 		$keys = array_keys($report);
 		for($i = 0; $i < count($keys); $i++)
@@ -25,6 +24,12 @@
 			$key = $keys[$i];
 			print $key.' = '.$report[$key]."\n";
 		}
+		
+		list($lat, $lon, $icon, $url) = get_weather_report($location);
+		print "location.latitude=$lat\n";
+		print "location.longitude=$lon\n";
+		print "weather.url=$url\n";
+		print "weather.icon=$icon\n";
 	}
 	else
 	{
@@ -43,7 +48,7 @@ function get_summaries($body)
 	for($i = 0; $i < count($lines); $i++)
 	{
 		//looking for someting like: ATA [12/01/08]
-		preg_match_all("/^\S{3}\s*\[(\d{2}\/\d{2}\/\d{2})]/", $lines[$i], $matches, PREG_OFFSET_CAPTURE);
+		preg_match_all("/^\S{3}\s*\[(\d+\/\d{2}\/\d{2})]/", $lines[$i], $matches, PREG_OFFSET_CAPTURE);
 		if( count($matches[1]) == 1 )
 		{
 			$data = array();
@@ -101,7 +106,7 @@ function getReadableLocation($loc)
 	if( $loc == 'SBN')
 		return 'Snowbasin';
 	if( $loc == 'SBD')
-		return 'Sunbird';
+		return 'Snowbird';
 	if( $loc == 'SOL')
 		return 'Solitude';
 	if( $loc == 'SUN')
@@ -111,5 +116,67 @@ function getReadableLocation($loc)
 	
 	//hope this doesn't happen, but be graceful at the least
 	return $loc;
+}
+
+function get_lat_lon($loc)
+{
+	if( $loc == 'ATA')
+		return array(40.57972, -111.6375);
+	if( $loc == 'BVR')
+		return array(41.96833, -111.54083);
+	if( $loc == 'BHR')
+		return array(37.69194, -112.83722);
+	if( $loc == 'BRT')
+		return array(40.6, -111.58278 );
+	if( $loc == 'CNY')
+		return array(40.685257, -111.556375);
+	if( $loc == 'DVR')
+		return array(40.63139, -111.47861 );
+	if( $loc == 'PCM')
+		return array(40.64361, -111.50417 );
+	if( $loc == 'POW')
+		return array(41.37778, -111.77111);
+	if( $loc == 'SBN')
+		return array(41.21194, -111.85111);
+	if( $loc == 'SBD')
+		return array(40.578052, -111.666755 );
+	if( $loc == 'SOL')
+		return array(40.62556, -111.59444 );
+	if( $loc == 'SUN')
+		return array(40.38583, -111.58083 );
+	if( $loc == 'WLF')
+		return array(40.47667, -111.02361 );
+}
+
+function get_weather_xml_dom($lat, $lon)
+{
+	$now = time();
+	$tomorrow = $now + (24 * 60 * 60);
+	$start = date('Y-m-d', $now);
+	$end = date('Y-m-d', $tomorrow);
+	
+	$url = "http://www.weather.gov/forecasts/xml/SOAP_server/ndfdXMLclient.php?whichClient=NDFDgen&lat=$lat&lon=$lon&listLatLon=&lat1=&lon1=&lat2=&lon2=&resolutionSub=&listLat1=&listLon1=&listLat2=&listLon2=&resolutionList=&endPoint1Lat=&endPoint1Lon=&endPoint2Lat=&endPoint2Lon=&listEndPoint1Lat=&listEndPoint1Lon=&listEndPoint2Lat=&listEndPoint2Lon=&zipCodeList=&listZipCodeList=&centerPointLat=&centerPointLon=&distanceLat=&distanceLon=&resolutionSquare=&listCenterPointLat=&listCenterPointLon=&listDistanceLat=&listDistanceLon=&listResolutionSquare=&citiesLevel=&listCitiesLevel=&sector=&gmlListLatLon=&featureType=&requestedTime=&startTime=&endTime=&compType=&propertyName=&product=glance&begin=$start&end=$end&icons=icons";
+	$xml = file_get_contents($url);
+	
+	$sxe = simplexml_load_string($xml);
+	return dom_import_simplexml($sxe);
+}
+
+//returns a list($lat, $long, $icon, $url)
+function get_weather_report($loc)
+{
+	list($lat, $lon) = get_lat_lon($loc);
+
+	$dom = get_weather_xml_dom($lat, $lon);
+	
+	//get the weather report URL
+	$node = $dom->getElementsByTagName('moreWeatherInformation')->item(0);
+	$url = $node->firstChild->nodeValue;
+	
+	//get the icon for the weather description
+	$node = $dom->getElementsByTagName('icon-link')->item(0);
+	$icon = $node->firstChild->nodeValue;
+	
+	return array($lat, $lon, $icon, $url);
 }
 ?>

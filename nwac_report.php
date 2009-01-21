@@ -4,17 +4,16 @@
 	
 	//first declare the valid locations
 	$locations = array();
-	$locations["OSOALP"] = "1";
-	$locations["OSOCMT"] = "1";
-	$locations["OSOHUR"] = "1";
-	$locations["OSOMSR"] = "1";
-	$locations["OSOMTB"] = "1";
-	$locations["OSOSK9"] = "1";
-	$locations["OSOSNO"] = "1";
-	$locations["OSOWPS"] = "1";
-	$locations["OSOGVT"] = "1";
-	$locations["OSOMHM"] = "1";
-	
+	$locations["OSOALP"] = array(47.44333, -121.42833 );
+	$locations["OSOCMT"] = array(46.92833, -121.50333);
+	$locations["OSOHUR"] = array(47.975, -123.51667);
+	$locations["OSOMSR"] = array(47.29194, -120.39778);
+	$locations["OSOMTB"] = array(48.857322, -121.660143 );
+	$locations["OSOSK9"] = array(47.75, -121.09);
+	$locations["OSOSNO"] = array(47.42222, -121.41);
+	$locations["OSOWPS"] = array(46.63556, -121.38639);
+	$locations["OSOGVT"] = array(45.297155, -121.756492);
+	$locations["OSOMHM"] = array(45.33185, -121.664631);
 
 	$location = $_GET['location'];
 	$url = 'http://www.nwac.us/products/'.$location;
@@ -117,6 +116,12 @@ function cache_summary($location, $report_date, $report, $report2)
 	fwrite($fp, "temp.readings = ".$summary['temp.readings']."\n");
 	fwrite($fp, "wind.avg = ".$summary['wind.avg']."\n");
 	fwrite($fp, "details.url=http://www.nwac.us/products/$location\n");
+	
+	list($lat, $long, $icon, $url) = get_weather_report($location);
+	fwrite($fp, "location.latitude=$lat\n");
+	fwrite($fp, "location.longitude=$long\n");
+	fwrite($fp, "weather.url=$url\n");
+	fwrite($fp, "weather.icon=$icon\n");
 	
 	fclose($fp);
 }
@@ -285,4 +290,39 @@ function get_report_columns($lines)
 	
 	return 0;
 }
+
+function get_weather_xml_dom($lat, $lon)
+{
+	$now = time();
+	$tomorrow = $now + (24 * 60 * 60);
+	$start = date('Y-m-d', $now);
+	$end = date('Y-m-d', $tomorrow);
+	
+	$url = "http://www.weather.gov/forecasts/xml/SOAP_server/ndfdXMLclient.php?whichClient=NDFDgen&lat=$lat&lon=$lon&listLatLon=&lat1=&lon1=&lat2=&lon2=&resolutionSub=&listLat1=&listLon1=&listLat2=&listLon2=&resolutionList=&endPoint1Lat=&endPoint1Lon=&endPoint2Lat=&endPoint2Lon=&listEndPoint1Lat=&listEndPoint1Lon=&listEndPoint2Lat=&listEndPoint2Lon=&zipCodeList=&listZipCodeList=&centerPointLat=&centerPointLon=&distanceLat=&distanceLon=&resolutionSquare=&listCenterPointLat=&listCenterPointLon=&listDistanceLat=&listDistanceLon=&listResolutionSquare=&citiesLevel=&listCitiesLevel=&sector=&gmlListLatLon=&featureType=&requestedTime=&startTime=&endTime=&compType=&propertyName=&product=glance&begin=$start&end=$end&icons=icons";
+	$xml = file_get_contents($url);
+	
+	$sxe = simplexml_load_string($xml);
+	return dom_import_simplexml($sxe);
+}
+
+//returns a list($lat, $long, $icon, $url)
+function get_weather_report($loc)
+{
+	global $locations;
+	
+	list($lat, $lon) = $locations[$loc];
+
+	$dom = get_weather_xml_dom($lat, $lon);
+	
+	//get the weather report URL
+	$node = $dom->getElementsByTagName('moreWeatherInformation')->item(0);
+	$url = $node->firstChild->nodeValue;
+	
+	//get the icon for the weather description
+	$node = $dom->getElementsByTagName('icon-link')->item(0);
+	$icon = $node->firstChild->nodeValue;
+	
+	return array($lat, $lon, $icon, $url);
+}
+
 ?>
