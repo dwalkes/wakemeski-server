@@ -10,13 +10,13 @@ class Mail
 	// returns the most recent email from the given sender with
 	// the given subject line regular expression
 	// returns the body
-	static function get_most_recent($from, $subject)
+	static function get_most_recent($from, $subject, $html=false)
 	{
 		$output = shell_exec('ls -t '.Mail::$MAILDIR);
 		$files = split("\n", $output);
 		for($i = 0; $i < count($files); $i++)
 		{
-			$body = Mail::parse($from, $subject, Mail::$MAILDIR.'/'.$files[$i]);
+			$body = Mail::parse($from, $subject, Mail::$MAILDIR.'/'.$files[$i], $html);
 			if( $body )
 			{
 				return $body;
@@ -27,7 +27,7 @@ class Mail
 	}
 
 	// returns $body if one matches the from and subject inputs
-	private static function parse($from, $subject, $file)
+	private static function parse($from, $subject, $file, $html)
 	{
 		$body = '';
 		$boundary = '';
@@ -59,11 +59,15 @@ class Mail
 				if( count($matches[0]) )
 				{
 					$boundary = $matches[1][0][0];
+					$boundary = str_replace('"', '', $boundary);
 					continue;
 				}
 			}
-	
-			if( $boundary && preg_match("/^Content-Type\s*:\s*text\/plain;/", $lines[$i]) )
+			
+			$pattern = "/^Content-Type\s*:\s*text\/plain;/";
+			if( $html )
+				$pattern = "/^Content-Type\s*:\s*text\/html;/";
+			if( $boundary && preg_match($pattern, $lines[$i]) )
 			{
 				//we are to the body of the email
 				while( $lines[++$i] != "--$boundary" && $i < count($lines) )

@@ -12,9 +12,10 @@
 		
 function show_regions()
 {
-	print "Washington\n";
+	print "New Mexico\n";
 	print "Oregon\n";
 	print "Utah\n";
+	print "Washington\n";
 }
 
 function show_locations($region)
@@ -53,6 +54,19 @@ function show_locations($region)
 		print "Solitude = $URL_BASE/utah_report.php?location=SOL\n";
 		print "Sundance = $URL_BASE/utah_report.php?location=SUN\n";
 		print "Wolf Creek = $URL_BASE/utah_report.php?location=WLF\n";
+	}
+	else if ( $region == "New Mexico" )
+	{
+		print "Angel Fire = $URL_BASE/nm_report.php?location=AF\n";
+		print "Enchanted Forest = $URL_BASE/nm_report.php?location=EF\n";
+		print "Pajarito Mountain = $URL_BASE/nm_report.php?location=PM\n";
+		print "Red River = $URL_BASE/nm_report.php?location=RR\n";
+		print "Sandia Peak = $URL_BASE/nm_report.php?location=SP\n";
+		print "Sipapu = $URL_BASE/nm_report.php?location=SI\n";
+		print "Ski Apache = $URL_BASE/nm_report.php?location=SA\n";
+		print "Ski Santa Fe = $URL_BASE/nm_report.php?location=SF\n";
+		print "Taos = $URL_BASE/nm_report.php?location=TS\n";
+		print "Valles Caldera Nordic = $URL_BASE/nm_report.php?location=VC\n";
 	}
 }
 ?>
