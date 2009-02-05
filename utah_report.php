@@ -48,7 +48,7 @@ function get_summaries($body)
 	for($i = 0; $i < count($lines); $i++)
 	{
 		//looking for someting like: ATA [12/01/08]
-		preg_match_all("/^\S{3}\s*\[(\d+\/\d{2}\/\d{2})]/", $lines[$i], $matches, PREG_OFFSET_CAPTURE);
+		preg_match_all("/^\S{3}\s*\[(\d+\/\d+\/\d+)]/", $lines[$i], $matches, PREG_OFFSET_CAPTURE);
 		if( count($matches[1]) == 1 )
 		{
 			$data = array();
