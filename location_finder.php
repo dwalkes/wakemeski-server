@@ -1,7 +1,7 @@
 <?php
 
 	header( "Content-Type: text/plain" );
-	
+
 	$URL_BASE = 'http://bettykrocks.com/skireport';
 
 	$region = $_GET['region'];
@@ -9,9 +9,10 @@
 		show_regions();
 	else
 		show_locations($region);
-		
+
 function show_regions()
 {
+    print "Colorado\n";
 	print "New Mexico\n";
 	print "Oregon\n";
 	print "Utah\n";
@@ -31,13 +32,13 @@ function show_locations($region)
 		print "Mt Baker = $URL_BASE/nwac_report.php?location=OSOMTB\n";
 		print "Stevens Pass = $URL_BASE/nwac_report.php?location=OSOSK9\n";
 		print "Snoqualmie Pass = $URL_BASE/nwac_report.php?location=OSOSNO\n";
-		print "White Pass = $URL_BASE/nwac_report.php?location=OSOWPS\n";		
+		print "White Pass = $URL_BASE/nwac_report.php?location=OSOWPS\n";
 	}
 	else if( $region == "Oregon")
 	{
 		print "Ski Bowl Ski Area, Government Camp = $URL_BASE/nwac_report.php?location=OSOGVT\n";
 		print "Mt Hood Meadows  = $URL_BASE/nwac_report.php?location=OSOMHM\n";
-		print "Timberline = $URL_BASE/nwac_report.php?location=OSOTIM\n"; 
+		print "Timberline = $URL_BASE/nwac_report.php?location=OSOTIM\n";
 	}
 	else if ( $region == "Utah" )
 	{
@@ -67,6 +68,31 @@ function show_locations($region)
 		print "Ski Santa Fe = $URL_BASE/nm_report.php?location=SF\n";
 		print "Taos = $URL_BASE/nm_report.php?location=TS\n";
 		print "Valles Caldera Nordic = $URL_BASE/nm_report.php?location=VC\n";
+	}
+    else if ( $region == "Colorado" )
+	{
+		print "Arapahoe Basin = $URL_BASE/co_report.php?location=AB\n";
+        print "Aspen Highlands = $URL_BASE/co_report.php?location=AH\n";
+        print "Aspen Mountain = $URL_BASE/co_report.php?location=AM\n";
+        print "Buttermilk = $URL_BASE/co_report.php?location=BM\n";
+        print "Copper Mountain = $URL_BASE/co_report.php?location=CM\n";
+        print "Crested Butte = $URL_BASE/co_report.php?location=CB\n";
+        print "Echo Mountain = $URL_BASE/co_report.php?location=EM\n";
+        print "Eldora = $URL_BASE/co_report.php?location=EL\n";
+        print "Howelsen = $URL_BASE/co_report.php?location=HW\n";
+        print "Loveland = $URL_BASE/co_report.php?location=LV\n";
+        print "Monarch Mountain = $URL_BASE/co_report.php?location=MM\n";
+        print "Powderhorn = $URL_BASE/co_report.php?location=PH\n";
+        print "Purgatory = $URL_BASE/co_report.php?location=PG\n";
+        print "Silverton Mountain = $URL_BASE/co_report.php?location=SM\n";
+        print "Ski Cooper = $URL_BASE/co_report.php?location=SC\n";
+        print "Snowmass = $URL_BASE/co_report.php?location=SN\n";
+        print "Sol Vista Basin = $URL_BASE/co_report.php?location=SV\n";
+        print "Steamboat = $URL_BASE/co_report.php?location=ST\n";
+        print "Sunlight = $URL_BASE/co_report.php?location=SL\n";
+        print "Telluride = $URL_BASE/co_report.php?location=TD\n";
+        print "Winter Park = $URL_BASE/co_report.php?location=WP\n";
+        print "Wolf Creek = $URL_BASE/co_report.php?location=WC\n";
 	}
 }
 ?>
