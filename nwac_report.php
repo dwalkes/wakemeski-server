@@ -109,8 +109,10 @@ function cache_summary($location, $report_date, $report, $report2)
 		{
 			$summary['snow.total'] .= $val.' ';
 		}
-		else if(preg_match("/^24/", $name) )
+		else if(preg_match("/^24/", $name) || preg_match("/^12/", $name))
 		{
+            //NOTE: There is a bug in the NWAC report for OSOSK9 (Steven's)
+            // it reports 12hr rather than 24hr. However its still a 24hr total
 			$summary['snow.daily'] .= "Today($val)";
 		}
 		else if(preg_match("/Temp/", $name) )
