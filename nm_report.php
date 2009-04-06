@@ -1,24 +1,51 @@
 <?php
+/*
+ * Copyright (c) 2008 nombre.usario@gmail.com
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 require_once('mail.inc');
 
 	//TODO caching support
-	
+
 	header( "Content-Type: text/plain" );
-	
+
 	$location = get_location_name($_GET['location']);
 	if(!location)
 	{
 		print "err.msg=invalid location: $location\n";
 		exit(1);
 	}
-	
+
 	//find the latest snow report email
 	$body = Mail::get_most_recent('info@skinewmexico.com', 'Ski New Mexico Mail', true);
 	if( $body )
 	{
-		list($total48, $depth, $conditions, $trails, $lifts) 
+		list($total48, $depth, $conditions, $trails, $lifts)
 			= get_report($body, $location);
-			
+
 		print "snow.total = $depth\n";
 		print "snow.daily = 48hr($total48)\n";
 		print "snow.conditions = $conditions\n";
@@ -26,7 +53,7 @@ require_once('mail.inc');
 		print "lifts.open = $lifts\n";
 		print "date = ".get_report_date($body)."\n";
 		print "details.url=".get_details_url($location)."\n";
-		
+
 		list($lat, $lon, $icon, $url) = get_weather_report($location);
 		print "location.latitude=$lat\n";
 		print "location.longitude=$lon\n";
@@ -48,7 +75,7 @@ function get_location($lines)
 		if( $idx2 !== false && $idx2 > $idx1 )
 		{
 			$location = substr($lines[1], $idx1, $idx2-$idx1);
-		} 
+		}
 	}
 
 	return $location;
@@ -67,9 +94,9 @@ function get_reading($line)
 		if( $idx2 !== false && $idx2 > $idx1 )
 		{
 			$reading = substr($line, $idx1, $idx2-$idx1);
-		} 
+		}
 	}
-	
+
 	$idx = strpos($reading, '&quot;');
 	if( $idx !== false )
 		$reading = substr($reading, 0, $idx);
@@ -85,7 +112,7 @@ function get_totals($lines)
 	$conditions = get_reading($lines[4]);
 	$trails = get_reading($lines[5]);
 	$lifts = get_reading($lines[6]);
-	
+
 	return array($total48, $depth, $conditions, $trails, $lifts);
 }
 
@@ -106,7 +133,7 @@ function get_report($body, $location)
 			}
 		}
 	}
-	
+
 	print "err.msg= Unable to find report for $location\n";
 	exit(1);
 }
@@ -127,9 +154,9 @@ function get_report_date($body)
 			$date = substr($body, $idx1, $idx2-$idx1);
 			$parts = preg_split('/\s+/', $date);
 			$date = $parts[1].' '.$parts[2].' '.$parts[5].' '.$parts[6];
-		} 
+		}
 	}
-	
+
 	return $date;
 }
 
@@ -187,10 +214,10 @@ function get_weather_xml_dom($lat, $lon)
 	$tomorrow = $now + (24 * 60 * 60);
 	$start = date('Y-m-d', $now);
 	$end = date('Y-m-d', $tomorrow);
-	
+
 	$url = "http://www.weather.gov/forecasts/xml/SOAP_server/ndfdXMLclient.php?whichClient=NDFDgen&lat=$lat&lon=$lon&listLatLon=&lat1=&lon1=&lat2=&lon2=&resolutionSub=&listLat1=&listLon1=&listLat2=&listLon2=&resolutionList=&endPoint1Lat=&endPoint1Lon=&endPoint2Lat=&endPoint2Lon=&listEndPoint1Lat=&listEndPoint1Lon=&listEndPoint2Lat=&listEndPoint2Lon=&zipCodeList=&listZipCodeList=&centerPointLat=&centerPointLon=&distanceLat=&distanceLon=&resolutionSquare=&listCenterPointLat=&listCenterPointLon=&listDistanceLat=&listDistanceLon=&listResolutionSquare=&citiesLevel=&listCitiesLevel=&sector=&gmlListLatLon=&featureType=&requestedTime=&startTime=&endTime=&compType=&propertyName=&product=glance&begin=$start&end=$end&icons=icons";
 	$xml = file_get_contents($url);
-	
+
 	$sxe = simplexml_load_string($xml);
 	return dom_import_simplexml($sxe);
 }
@@ -201,15 +228,15 @@ function get_weather_report($loc)
 	list($lat, $lon) = get_lat_lon($loc);
 
 	$dom = get_weather_xml_dom($lat, $lon);
-	
+
 	//get the weather report URL
 	$node = $dom->getElementsByTagName('moreWeatherInformation')->item(0);
 	$url = $node->firstChild->nodeValue;
-	
+
 	//get the icon for the weather description
 	$node = $dom->getElementsByTagName('icon-link')->item(0);
 	$icon = $node->firstChild->nodeValue;
-	
+
 	return array($lat, $lon, $icon, $url);
 }
 
@@ -234,9 +261,9 @@ function get_location_name($code)
 		return "Ski Santa Fe";
 	if( $code == 'TS' )
 		return "Taos";
-	if( $code == 'VC' ) 
+	if( $code == 'VC' )
 		return "Valles Caldera Nordic";
-	
+
 	return '';
 }
 
