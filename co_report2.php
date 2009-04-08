@@ -149,7 +149,7 @@ function get_summaries($body)
                 $url = substr($lines[$i], $idx, strlen($lines[$i])-$idx-1);
 
                 $data['location'] = $loc;
-                $data['details.url'] = $url;
+                $data['details.url'] = 'http://'.$url;
 
                 //Temp. at 5am MST: 4 F/-16C
                 $conditions = $lines[$i+1];
@@ -171,7 +171,7 @@ function get_summaries($body)
                 $parts = preg_split('/:/', $conditions);
                 $snowWeek = $parts[1];
 
-                $data['snow.totals'] = "24hr($snow24) Week($snowWeek)";
+                $data['snow.daily'] = "24hr($snow24) Week($snowWeek)";
 
                 //Mid-Mountain Base: 85 in.
                 $conditions = $lines[$i+5];
