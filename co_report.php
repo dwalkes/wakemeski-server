@@ -53,7 +53,7 @@ function have_cache($location)
 		//get modification time stamp. If its less than
 		//120 minutes old, use that copy
 		$mod = filemtime($file);
-		if( time() - $mod < 72000 ) //=60*120 = 120 minutes
+		if( time() - $mod < 7200 ) //=60*120 = 120 minutes
 		{
 			return 1;
 		}
