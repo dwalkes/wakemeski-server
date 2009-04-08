@@ -65,8 +65,9 @@ class Mail
 			if( count($matches[0]) )
 			{
 				$tmp = substr($lines[$i],$matches[1][0][1]);
-				if( strpos($tmp, $subject) != FALSE )
+				if( $subject && strpos($tmp, $subject) != FALSE )
 					return '';
+
 				continue;
 			}
 
@@ -76,6 +77,7 @@ class Mail
 				$tmp = substr($lines[$i],$matches[1][0][1]);
 				if( $tmp != $from )
 					return '';
+
 				continue;
 			}
 
@@ -93,9 +95,10 @@ class Mail
 			$pattern = "/^Content-Type\s*:\s*text\/plain;/";
 			if( $html )
 				$pattern = "/^Content-Type\s*:\s*text\/html;/";
-			if( $boundary && preg_match($pattern, $lines[$i]) )
+            $match = preg_match($pattern, $lines[$i]);
+			if( $boundary && $match )
 			{
-				//we are to the body of the email
+				//we are to the body of the multi-part email
 				while( $lines[++$i] != "--$boundary" && $i < count($lines) )
 				{
 					// a line ending with '=' means the next line should be
@@ -110,6 +113,14 @@ class Mail
 					}
 				}
 			}
+            else if( $match )
+            {
+                //we are to the body of single part plain email
+                while( ++$i < count($lines) )
+				{
+					$body .= $lines[$i]."\n";
+				}
+            }
 		}
 
 		return $body;

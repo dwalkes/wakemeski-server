@@ -119,6 +119,11 @@ function show_locations($region)
         print "Telluride = $URL_BASE/co_report.php?location=TD\n";
         print "Winter Park = $URL_BASE/co_report.php?location=WP\n";
         print "Wolf Creek = $URL_BASE/co_report.php?location=WC\n";
-	}
+
+        print "Vail = $URL_BASE/co_report2.php?location=VA\n";
+        print "Beaver Creek = $URL_BASE/co_report2.php?location=BC\n";
+        print "Keystone = $URL_BASE/co_report2.php?location=KS\n";
+        print "Breckenridge = $URL_BASE/co_report2.php?location=BK\n";
+    }
 }
 ?>
