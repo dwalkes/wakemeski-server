@@ -28,8 +28,6 @@
 
 require_once('mail.inc');
 
-	//TODO caching support
-
 	header( "Content-Type: text/plain" );
 
 	$location = get_location_name($_GET['location']);
@@ -39,6 +37,35 @@ require_once('mail.inc');
 		exit(1);
 	}
 
+    $found_cache = have_cache($location);
+	if( !$found_cache )
+	{
+		write_report($location);
+	}
+
+	print file_get_contents("nm_$location.txt");
+	print "cache.found=$found_cache\n";
+
+function have_cache($location)
+{
+	$file = "nm_$location.txt";
+	if( is_readable($file))
+	{
+		//get modification time stamp. If its less than
+		//120 minutes old, use that copy
+		$mod = filemtime($file);
+		if( time() - $mod < 7200 ) //=60*120 = 120 minutes
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+function write_report($location)
+{
+    $fp = fopen("nm_$location.txt", 'w');
+
 	//find the latest snow report email
 	$body = Mail::get_most_recent('info@skinewmexico.com', 'Ski New Mexico Mail', true);
 	if( $body )
@@ -46,20 +73,27 @@ require_once('mail.inc');
 		list($total48, $depth, $conditions, $trails, $lifts)
 			= get_report($body, $location);
 
-		print "snow.total = $depth\n";
-		print "snow.daily = 48hr($total48)\n";
-		print "snow.conditions = $conditions\n";
-		print "trails.open = $trails\n";
-		print "lifts.open = $lifts\n";
-		print "date = ".get_report_date($body)."\n";
-		print "details.url=".get_details_url($location)."\n";
+		fwrite($fp, "snow.total = $depth\n");
+		fwrite($fp, "snow.daily = 48hr($total48)\n");
+		fwrite($fp, "snow.conditions = $conditions\n");
+		fwrite($fp, "trails.open = $trails\n");
+		fwrite($fp, "lifts.open = $lifts\n");
+		fwrite($fp, "date = ".get_report_date($body)."\n");
+		fwrite($fp, "details.url=".get_details_url($location)."\n");
 
 		list($lat, $lon, $icon, $url) = get_weather_report($location);
-		print "location.latitude=$lat\n";
-		print "location.longitude=$lon\n";
-		print "weather.url=$url\n";
-		print "weather.icon=$icon\n";
+		fwrite($fp, "location.latitude=$lat\n");
+		fwrite($fp, "location.longitude=$lon\n");
+		fwrite($fp, "weather.url=$url\n");
+		fwrite($fp, "weather.icon=$icon\n");
 	}
+    else
+    {
+        fwrite($fp, "err.msg=No ski report data found\n");
+    }
+
+    fclose($fp);
+}
 
 //the 2nd line contains the location in a string like:
 // <td align='center' class='medblu' width='18%' height='25'><b>Taos Ski Valley</b></td>

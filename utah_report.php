@@ -38,6 +38,36 @@
 		print "err.msg=invalid location: $location\n";
 	}
 
+    $found_cache = have_cache($location);
+	if( !$found_cache )
+	{
+		write_report($location);
+	}
+
+	print file_get_contents("ut_$location.txt");
+	print "cache.found=$found_cache\n";
+
+
+function have_cache($location)
+{
+	$file = "ut_$location.txt";
+	if( is_readable($file))
+	{
+		//get modification time stamp. If its less than
+		//120 minutes old, use that copy
+		$mod = filemtime($file);
+		if( time() - $mod < 7200 ) //=60*120 = 120 minutes
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+function write_report($location)
+{
+    $fp = fopen("ut_$location.txt", 'w');
+
 	//find the latest snow report email
 	$body = Mail::get_most_recent('Ski Utah <info@mailing.skiutah.com>', 'Ski Report for');
 	if( $body )
@@ -48,19 +78,22 @@
 		for($i = 0; $i < count($keys); $i++)
 		{
 			$key = $keys[$i];
-			print $key.' = '.$report[$key]."\n";
+            fwrite($fp, $key.' = '.$report[$key]."\n");
 		}
 
 		list($lat, $lon, $icon, $url) = get_weather_report($location);
-		print "location.latitude=$lat\n";
-		print "location.longitude=$lon\n";
-		print "weather.url=$url\n";
-		print "weather.icon=$icon\n";
+        fwrite($fp, "location.latitude=$lat\n");
+		fwrite($fp, "location.longitude=$lon\n");
+		fwrite($fp, "weather.url=$url\n");
+		fwrite($fp, "weather.icon=$icon\n");
 	}
 	else
 	{
-		print "err.msg=No ski report data found\n";
+		fwrite($fp, "err.msg=No ski report data found\n");
 	}
+
+    fclose($fp);
+}
 
 /**
  * Parses the email body into a hash map of hashmaps like:
