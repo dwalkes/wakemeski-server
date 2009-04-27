@@ -75,12 +75,19 @@ function write_report($loc)
     if( $body )
     {
         $summary = get_summaries($body);
-        $report = $summary[$loc];
-        $keys = array_keys($report);
-        for($i = 0; $i < count($keys); $i++)
+        if( in_array($loc, $summary) )
         {
-            $key = $keys[$i];
-            fwrite($fp, $key.' = '.$report[$key]."\n");
+            $report = $summary[$loc];
+            $keys = array_keys($report);
+            for($i = 0; $i < count($keys); $i++)
+            {
+                $key = $keys[$i];
+                fwrite($fp, $key.' = '.$report[$key]."\n");
+            }
+        }
+        else
+        {
+            fwrite($fp, "err.msg=No report data provided today\n");
         }
 
         list($lat, $lon, $icon, $url) = get_weather_report($loc);
