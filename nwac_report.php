@@ -273,7 +273,11 @@ function get_average($numbers=array(), $partial=false)
 
 function get_report_as_lines($url)
 {
-	return split("\n", file_get_contents($url));
+	$contents = file_get_contents($url);
+        $start = strstr($contents, "<pre>");
+        $endidx = strrpos($start, "</pre>");
+	$contents = substr($start, 0, $endidx);
+	return split("\n", $contents);
 }
 
 // returns an array:
