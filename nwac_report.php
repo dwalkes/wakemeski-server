@@ -277,7 +277,8 @@ function get_report_as_lines($url)
         $start = strstr($contents, "<pre>");
         $endidx = strrpos($start, "</pre>");
 	$contents = substr($start, 0, $endidx);
-	return split("\n", $contents);
+
+	return split("\n", str_replace("&#39;", "'", $contents));
 }
 
 // returns an array:
