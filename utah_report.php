@@ -36,6 +36,7 @@
 	if(!getReadableLocation($location))
 	{
 		print "err.msg=invalid location: $location\n";
+        exit(1);
 	}
 
     $found_cache = have_cache($location);
@@ -69,7 +70,7 @@ function write_report($location)
     $fp = fopen("ut_$location.txt", 'w');
 
 	//find the latest snow report email
-	$body = Mail::get_most_recent('Ski Utah <info@mailing.skiutah.com>', 'Ski Report for');
+	$body = Mail::get_most_recent('"SkiUtah" <eblast@skiutah.com>', 'Ski Utah Snow Report', true);
 	if( $body )
 	{
 		$summary = get_summaries($body);
@@ -103,40 +104,53 @@ function get_summaries($body)
 {
 	$summary = array();
 
-	$lines = split("\n", $body);
-	for($i = 0; $i < count($lines); $i++)
+	//the report for each resort is embedded in a bunch of HTML we must
+	//sift through. Each resort is separated with a comment:
+	//  <!-- repeat for each resort -->
+	$reports = split("<!-- repeat for each resort -->", $body);
+	//the first item will be html junk leading up to the first report
+	array_shift($reports);
+	for($i = 0;  $i < count($reports); $i++)
 	{
-		//looking for someting like: ATA [12/01/08]
-		preg_match_all("/^\S{3}\s*\[(\d+\/\d+\/\d+)]/", $lines[$i], $matches, PREG_OFFSET_CAPTURE);
-		if( count($matches[1]) == 1 )
+		$data = array();
+
+		preg_match_all("/<p><em>(.*)<\/em><\/p>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+		$data['date'] = $matches[1][0][0];
+
+		preg_match_all("/<p><strong>(.*)<\/strong><\/p>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+
+		$loc = getLocation($matches[1][0][0]);
+		//this isn't totally needed, but $matches[1][0][0] is a little more
+		//verbose than what we need
+		$data['location'] = getReadableLocation($loc);
+
+		preg_match_all("/<a href=3D\"(.*)\"/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+		$data['location.info'] = $matches[1][1][0];
+
+		//The 24/48 hour snow will be in the format:
+		// New Snow last 24 hours: 0"
+		preg_match_all("/New Snow last (\d{2}) hours: (\d+)\"/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+		//this should always be 2 (ie 24 and 48) but why hard-code
+		for($j = 0; $j < count($matches[0]); $j++)
 		{
-			$data = array();
-
-			$date = $matches[1][0][0];
-			$data['date'] = $date;
-
-			$loc = substr($lines[$i++], 0, 3);
-			$data['location'] = getReadableLocation($loc);
-			$data['location.info'] = $lines[$i++];
-
-			//now look at the report data:
-			$parts = split("\|", $lines[$i+5]);
-			$data['snow.total'] = trim($parts[1]);
-			$data['snow.daily'] = 'Today('.trim($parts[2]).') Yesterday('.trim($parts[3]).')';
-
-			$runs = trim($parts[4]);
-			list($open, $total) = split("\/", $runs);
-			$data['trails.open'] = $open;
-			$data['trails.total'] = $total;
-
-			$lifts = trim($parts[5]);
-			list($open, $total) = split("\/", $lifts);
-			$data['lifts.open'] = $open;
-			$data['lifts.total'] = $total;
-
-			$summary[$loc] = $data;
+			$label = $matches[1][$j][0];
+			$val = $matches[2][$j][0];
+			$data['snow.daily'] .= $label."hr(".$val.") ";
 		}
-	}
+
+		preg_match_all("/Base: (\d+)\"<\/p>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+		$data['snow.total'] = $matches[1][0][0];
+
+		preg_match_all("/Lifts Open: (\d+)\/(\d+)<br/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+		$data['lifts.open'] = $matches[1][0][0];
+		$data['lifts.total'] = $matches[2][0][0];
+
+		preg_match_all("/<p>Runs Open: (\d+)\/(\d+)<br/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+		$data['trails.open'] = $matches[1][0][0];
+		$data['trails.total'] = $matches[2][0][0];
+
+		$summary[$loc] = $data;
+    }
 
 	return $summary;
 }
@@ -146,35 +160,37 @@ function get_summaries($body)
  */
 function getReadableLocation($loc)
 {
-	if( $loc == 'ATA')
-		return 'Alta';
-	if( $loc == 'BVR')
-		return 'Beaver Mountain';
-	if( $loc == 'BHR')
-		return 'Brian Head';
-	if( $loc == 'BRT')
-		return 'Brighton';
-	if( $loc == 'CNY')
-		return 'The Canyons';
-	if( $loc == 'DVR')
-		return 'Deer Valley';
-	if( $loc == 'PCM')
-		return 'Park City';
-	if( $loc == 'POW')
-		return 'Powder Mountain';
-	if( $loc == 'SBN')
-		return 'Snowbasin';
-	if( $loc == 'SBD')
-		return 'Snowbird';
-	if( $loc == 'SOL')
-		return 'Solitude';
-	if( $loc == 'SUN')
-		return 'Sundance';
-	if( $loc == 'WLF')
-		return 'Wolf Creek';
+	if( $loc == 'ATA') return 'Alta';
+	if( $loc == 'BVR') return 'Beaver Mountain';
+	if( $loc == 'BHR') return 'Brian Head';
+	if( $loc == 'BRT') return 'Brighton';
+	if( $loc == 'CNY') return 'The Canyons';
+	if( $loc == 'DVR') return 'Deer Valley';
+	if( $loc == 'PCM') return 'Park City';
+	if( $loc == 'POW') return 'Powder Mountain';
+	if( $loc == 'SBN') return 'Snowbasin';
+	if( $loc == 'SBD') return 'Snowbird';
+	if( $loc == 'SOL') return 'Solitude';
+	if( $loc == 'SUN') return 'Sundance';
+	if( $loc == 'WLF') return 'Wolf Creek';
+}
 
-	//hope this doesn't happen, but be graceful at the least
-	return $loc;
+//turns something like "Alta" into ATA
+function getLocation($resort)
+{
+	if( strstr($resort, "Alta") ) return "ATA";
+	if( strstr($resort, "Beaver Mountain") ) return "BVR";
+	if( strstr($resort, "Brian Head") ) return "BHR";
+	if( strstr($resort, "Brighton") ) return "BRT";
+	if( strstr($resort, "The Canyons") ) return "CNY";
+	if( strstr($resort, "Deer Valley") ) return "DVR";
+	if( strstr($resort, "Park City") ) return "PCM";
+	if( strstr($resort, "Powder Mountain") ) return "POW";
+	if( strstr($resort, "Snowbasin") ) return "SBN";
+	if( strstr($resort, "Snowbird") ) return "SBD";
+	if( strstr($resort, "Solitude") ) return "SOL";
+	if( strstr($resort, "Sundance") ) return "SUN";
+	if( strstr($resort, "Wolf Creek") ) return "WLF";
 }
 
 function get_lat_lon($loc)

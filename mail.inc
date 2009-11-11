@@ -84,6 +84,8 @@ class Mail
 			if( !$boundary )
 			{
 				preg_match_all("/boundary\s*=\s*(\S+);/", $lines[$i], $matches, PREG_OFFSET_CAPTURE);
+				if( !count($matches[0]) )
+					preg_match_all("/boundary\s*=\s*(\S+)/", $lines[$i], $matches, PREG_OFFSET_CAPTURE);
 				if( count($matches[0]) )
 				{
 					$boundary = $matches[1][0][0];
