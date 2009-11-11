@@ -75,7 +75,7 @@ function write_report($loc)
     if( $body )
     {
         $summary = get_summaries($body);
-        if( in_array($loc, $summary) )
+        if( array_key_exists($loc, $summary) )
         {
             $report = $summary[$loc];
             $keys = array_keys($report);
