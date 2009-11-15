@@ -105,11 +105,9 @@ function get_summaries($body)
 	$summary = array();
 
 	//the report for each resort is embedded in a bunch of HTML we must
-	//sift through. Each resort is separated with a comment:
-	//  <!-- repeat for each resort -->
-	$reports = split("<!-- repeat for each resort -->", $body);
-	//the first item will be html junk leading up to the first report
-	array_shift($reports);
+	//sift through. Each resort is separated by:
+	$reports = split('<table class=3D"resort"', $body);
+	array_shift($reports); //the first portion is junk leading up to the report
 	for($i = 0;  $i < count($reports); $i++)
 	{
 		$data = array();
@@ -117,15 +115,14 @@ function get_summaries($body)
 		preg_match_all("/<p><em>(.*)<\/em><\/p>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
 		$data['date'] = $matches[1][0][0];
 
-		preg_match_all("/<p><strong>(.*)<\/strong><\/p>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
-
+		preg_match_all("/<h2>(.*)<\/h2>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
 		$loc = getLocation($matches[1][0][0]);
 		//this isn't totally needed, but $matches[1][0][0] is a little more
 		//verbose than what we need
 		$data['location'] = getReadableLocation($loc);
 
-		preg_match_all("/<a href=3D\"(.*)\"/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
-		$data['location.info'] = $matches[1][1][0];
+		preg_match_all("/<a href=3D\"(.*?)\"/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+		$data['location.info'] = $matches[1][0][0];
 
 		//The 24/48 hour snow will be in the format:
 		// New Snow last 24 hours: 0"
@@ -141,11 +138,11 @@ function get_summaries($body)
 		preg_match_all("/Base: (\d+)\"<\/p>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
 		$data['snow.total'] = $matches[1][0][0];
 
-		preg_match_all("/Lifts Open: (\d+)\/(\d+)<br/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+		preg_match_all("/Lifts Open: (\d+)\/(\d+)/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
 		$data['lifts.open'] = $matches[1][0][0];
 		$data['lifts.total'] = $matches[2][0][0];
 
-		preg_match_all("/<p>Runs Open: (\d+)\/(\d+)<br/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
+		preg_match_all("/Runs Open: (\d+)\/(\d+)/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
 		$data['trails.open'] = $matches[1][0][0];
 		$data['trails.total'] = $matches[2][0][0];
 
