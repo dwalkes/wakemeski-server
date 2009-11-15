@@ -26,25 +26,33 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('mail.inc');
-
 	header( "Content-Type: text/plain" );
 
-	$location = get_location_name($_GET['location']);
-	if(!location)
+	$location = $_GET['location'];
+
+	//first validate the location:
+	if(!get_location_name($location))
 	{
 		print "err.msg=invalid location: $location\n";
 		exit(1);
 	}
 
-    $found_cache = have_cache($location);
+	$found_cache = have_cache($location);
 	if( !$found_cache )
 	{
 		write_report($location);
 	}
 
-	print file_get_contents("nm_$location.txt");
-	print "cache.found=$found_cache\n";
+	$cache_file = "nm_$location.txt";
+	if( is_readable($cache_file) )
+	{
+		print file_get_contents("nm_$location.txt");
+		print "cache.found=$found_cache\n";
+	}
+	else
+	{
+		print "err.msg=No ski report data found\n";
+	}
 
 function have_cache($location)
 {
@@ -62,183 +70,136 @@ function have_cache($location)
 	return 0;
 }
 
-function write_report($location)
+function write_report($loc)
 {
-    $fp = fopen("nm_$location.txt", 'w');
-
-	//find the latest snow report email
-	$body = Mail::get_most_recent('info@skinewmexico.com', 'Ski New Mexico Mail', true);
-	if( $body )
+	$reports = get_reports();
+	$report = $reports[$loc];
+	if( $report )
 	{
-		list($total48, $depth, $conditions, $trails, $lifts)
-			= get_report($body, $location);
-
-		fwrite($fp, "snow.total = $depth\n");
-		fwrite($fp, "snow.daily = 48hr($total48)\n");
-		fwrite($fp, "snow.conditions = $conditions\n");
-		fwrite($fp, "trails.open = $trails\n");
-		fwrite($fp, "lifts.open = $lifts\n");
-		fwrite($fp, "date = ".get_report_date($body)."\n");
-		fwrite($fp, "details.url=".get_details_url($location)."\n");
-
-		list($lat, $lon, $icon, $url) = get_weather_report($location);
+		$fp = fopen("nm_$loc.txt", "w");
+		
+		$keys = array_keys($report);
+		for($j = 0; $j < count($keys); $j++)
+		{
+			$key = $keys[$j];
+			fwrite($fp, $key.' = '.$report[$key]."\n");
+		}
+		fwrite($fp, "location.info=".get_details_url($loc)."\n");
+		list($lat, $lon, $icon, $url) = get_weather_report($loc);
 		fwrite($fp, "location.latitude=$lat\n");
 		fwrite($fp, "location.longitude=$lon\n");
 		fwrite($fp, "weather.url=$url\n");
 		fwrite($fp, "weather.icon=$icon\n");
+		
+		fclose($fp);
 	}
-    else
-    {
-        fwrite($fp, "err.msg=No ski report data found\n");
-    }
-
-    fclose($fp);
 }
 
-//the 2nd line contains the location in a string like:
-// <td align='center' class='medblu' width='18%' height='25'><b>Taos Ski Valley</b></td>
-function get_location($lines)
+function get_reports()
 {
-	$location = '';
+	$contents = file_get_contents("http://skinewmexico.com/snow_reports/feed.rss");
+	
+	//each location is in an <item> tag
+	$locations = preg_split("/<item>/", $contents);
+	//the first item is header junk we can ignore
+	array_shift($locations);
 
-	$idx1 = strpos($lines[1], '<b>');
-	if( $idx1 !== false )
+	$reports = array();
+	for($i = 0; $i < count($locations); $i++)
 	{
-		$idx1 += 3; //get it past the <b>
-		$idx2 = strpos($lines[1], '</b>');
-		if( $idx2 !== false && $idx2 > $idx1 )
-		{
-			$location = substr($lines[1], $idx1, $idx2-$idx1);
-		}
-	}
-
-	return $location;
+		$report = get_report($locations[$i]);
+		$loc = get_location($report['location']);
+		$reports[$loc] = $report;
+	}	
+	
+	return $reports;
 }
 
-//get the value of the content of the "<td>content</td>" tag
-function get_reading($line)
+function get_report($body)
 {
-	$reading = '';
+	$data = array();
+	preg_match_all("/<h1>(.*)<\/h1/", $body, $matches, PREG_OFFSET_CAPTURE);
+	$data['location'] = $matches[1][0][0];
+	
+	preg_match_all("/<pubDate>(.*)<\/pubDate>/", $body, $matches, PREG_OFFSET_CAPTURE);	
+	$data['date'] = $matches[1][0][0];
+	
+	preg_match_all("/New Natural Snow Last 48 Hours: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+		$data['snow.daily'] = $matches[1][0][0];
+	else
+		$data['snow.daily'] = 'none';
+		
+	preg_match_all("/Base Snow Depth \(inches\): <b>(.*?)&quot;/", $body, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+		$data['snow.total'] = $matches[1][0][0];
+	else
+		$data['snow.total'] = '?';
+		
+	preg_match_all("/Trails Open: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+		$data['trails.open'] = $matches[1][0][0];
+	else
+		$data['trails.open'] = 0;
 
-	$idx1 = strpos($line, '>');
-	if( $idx1 !== false )
-	{
-		$idx1 += 1; //get it past the >
-		$idx2 = strrpos($line, '<');
-		if( $idx2 !== false && $idx2 > $idx1 )
-		{
-			$reading = substr($line, $idx1, $idx2-$idx1);
-		}
-	}
+	preg_match_all("/Lifts Open: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+		$data['lifts.open'] = $matches[1][0][0];
+	else
+		$data['lifts.open'] = 0;
 
-	$idx = strpos($reading, '&quot;');
-	if( $idx !== false )
-		$reading = substr($reading, 0, $idx);
+	preg_match_all("/Surface Cond&#58; (.*?)<\/title>/", $body, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+		$data['snow.conditions'] = $matches[1][0][0];
 
-	return $reading;
-}
-
-//returns a list of (48hr, depth, conditions, trails, lifts)
-function get_totals($lines)
-{
-	$total48 = get_reading($lines[2]);
-	$depth = get_reading($lines[3]);
-	$conditions = get_reading($lines[4]);
-	$trails = get_reading($lines[5]);
-	$lifts = get_reading($lines[6]);
-
-	return array($total48, $depth, $conditions, $trails, $lifts);
-}
-
-//returns a list of (48hr, depth, conditions, trails, lifts)
-function get_report($body, $location)
-{
-	//<tr bgcolor='#EAEAEA'>
-	$parts = explode("<tr bgcolor='#EAEAEA'>", $body);
-	if( count($parts) > 1 )
-	{
-		//ignore the first part - its the junk before what we need
-		for($i = 1; $i < count($parts); $i++ )
-		{
-			$lines = explode("\n", $parts[$i]);
-			if( strpos(get_location($lines), $location) !== false )
-			{
-				return get_totals($lines);
-			}
-		}
-	}
-
-	print "err.msg= Unable to find report for $location\n";
-	exit(1);
-}
-
-//Look for the line that looks like:
-// Current report issued: January 27, 2009 at 7:01AM MST<br />
-function get_report_date($body)
-{
-	$date = "?";
-
-	$idx1 = strpos($body, 'Current report issued:');
-	if( $idx1 !== false )
-	{
-		$idx1 += 22; //get it past the search string
-		$idx2 = strpos($body, '<', $idx1);
-		if( $idx2 !== false && $idx2 > $idx1 )
-		{
-			$date = substr($body, $idx1, $idx2-$idx1);
-			$parts = preg_split('/\s+/', $date);
-			$date = $parts[1].' '.$parts[2].' '.$parts[5].' '.$parts[6];
-		}
-	}
-
-	return $date;
+	return $data;
 }
 
 function get_details_url($loc)
 {
-	if( $loc == 'Angel Fire')
+	if( $loc == 'AF')
 		return 'http://www.angelfireresort.com/winter/mountain-snow-report.php';
-	if( $loc == 'Enchanted Forest')
+	if( $loc == 'EF')
 		return 'http://www.enchantedforestxc.com/';
-	if( $loc == 'Pajarito Mountain')
+	if( $loc == 'PM')
 		return 'http://www.skipajarito.com/conditions.php';
-	if( $loc == 'Red River')
+	if( $loc == 'RR')
 		return 'http://redriverskiarea.com/page.php?pname=mountain/snow';
-	if( $loc == 'Sandia Peak')
+	if( $loc == 'SP')
 		return 'http://www.sandiapeak.com/index.php?page=snow-report';
-	if( $loc == 'Sipapu')
+	if( $loc == 'SI')
 		return 'http://www.sipapunm.com/index.php?option=com_snowreport&view=helloworld&Itemid=73';
-	if( $loc == 'Ski Apache')
+	if( $loc == 'SA')
 		return 'http://www.skiapache.com/';
-	if( $loc == 'Ski Santa Fe')
+	if( $loc == 'SF')
 		return 'https://www.skisantafe.com/index.php/snow_report';
-	if( $loc == 'Taos')
+	if( $loc == 'TS')
 		return 'http://www.skitaos.org/snow_reports/index';
-	if( $loc == 'Valles Caldera Nordic')
+	if( $loc == 'VC')
 		return 'http://www.vallescaldera.gov/comevisit/skisnow/';
 }
 
 function get_lat_lon($loc)
 {
-	if( $loc == 'Angel Fire')
+	if( $loc == 'AF')
 		return array(36.3903, -105.2875);
-	if( $loc == 'Enchanted Forest')
+	if( $loc == 'EF')
 		return array(36.7063, -105.4053);
-	if( $loc == 'Pajarito Mountain')
+	if( $loc == 'PM')
 		return array(35.895129, -106.391785);
-	if( $loc == 'Red River')
+	if( $loc == 'RR')
 		return array(36.70859, -105.409924 );
-	if( $loc == 'Sandia Peak')
+	if( $loc == 'SP')
 		return array(35.207831, -106.41354 );
-	if( $loc == 'Sipapu')
+	if( $loc == 'SI')
 		return array(36.153595, -105.54824);
-	if( $loc == 'Ski Apache')
+	if( $loc == 'SA')
 		return array(33.397455, -105.789198);
-	if( $loc == 'Ski Santa Fe')
+	if( $loc == 'SF')
 		return array(35.796793, -105.80166);
-	if( $loc == 'Taos')
+	if( $loc == 'TS')
 		return array(36.35, -105.27);
-	if( $loc == 'Valles Caldera Nordic')
+	if( $loc == 'VC')
 		return array(35.9, -106.55);
 }
 
@@ -277,26 +238,33 @@ function get_weather_report($loc)
 //these values are tied to the values defined in location_finder.php
 function get_location_name($code)
 {
-	if( $code == 'AF' )
-		return 'Angel Fire';
-	if( $code == 'EF' )
-		return "Enchanted Forest";
-	if( $code == 'PM' )
-		return "Pajarito Mountain";
-	if ( $code == 'RR' )
-		return "Red River";
-	if( $code == 'SP' )
-		return "Sandia Peak";
-	if( $code == 'SI' )
-		return "Sipapu";
-	if( $code == 'SA' )
-		return "Ski Apache";
-	if( $code == 'SF' )
-		return "Ski Santa Fe";
-	if( $code == 'TS' )
-		return "Taos";
-	if( $code == 'VC' )
-		return "Valles Caldera Nordic";
+	if( $code == 'AF' ) return 'Angel Fire';
+	if( $code == 'EF' )	return "Enchanted Forest";
+	if( $code == 'PM' )	return "Pajarito Mountain";
+	if( $code == 'RR' )	return "Red River";
+	if( $code == 'SP' )	return "Sandia Peak";
+	if( $code == 'SI' )	return "Sipapu";
+	if( $code == 'SA' )	return "Ski Apache";
+	if( $code == 'SF' )	return "Ski Santa Fe";
+	if( $code == 'TS' )	return "Taos";
+	if( $code == 'VC' )	return "Valles Caldera Nordic";
+
+	return '';
+}
+
+//these values are tied to the values defined in location_finder.php
+function get_location($name)
+{
+	if( strstr($name, "Angel Fire") ) return "AF";
+	if( strstr($name, "Enchanted Forest") ) return "EF";
+	if( strstr($name, "Pajarito Mountain") ) return "PM";
+	if( strstr($name, "Red River") ) return "RR";
+	if( strstr($name, "Sandia Peak") ) return "SP";
+	if( strstr($name, "Sandia Peak") ) return "SI";
+	if( strstr($name, "Sipapu") ) return "SA";
+	if( strstr($name, "Ski Santa Fe") ) return "SF";
+	if( strstr($name, "Taos") ) return "TS";
+	if( strstr($name, "Valles Caldera") ) return "VC";
 
 	return '';
 }
