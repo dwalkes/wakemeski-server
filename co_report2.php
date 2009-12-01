@@ -26,9 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-	require_once('mail.inc');
-
-	header( "Content-Type: text/plain" );
+header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
@@ -36,16 +34,25 @@
 	if(!get_readable_location($location))
 	{
 		print "err.msg=invalid location: $location\n";
+		exit(1);
 	}
 
-    $found_cache = have_cache($location);
+	$found_cache = have_cache($location);
 	if( !$found_cache )
 	{
 		write_report($location);
 	}
 
-	print file_get_contents("co2_$location.txt");
-	print "cache.found=$found_cache\n";
+	$cache_file = "co2_$location.txt";
+	if( is_readable($cache_file) )
+	{
+		print file_get_contents("co2_$location.txt");
+		print "cache.found=$found_cache\n";
+	}
+	else
+	{
+		print "err.msg=No ski report data found\n";
+	}
 
 function have_cache($location)
 {
@@ -65,143 +72,87 @@ function have_cache($location)
 
 function write_report($loc)
 {
-    $fp = fopen("co2_$loc.txt", 'w');
+	$reports = get_reports();
+	$report = $reports[$loc];
+	if( $report )
+	{
+		$fp = fopen("co2_$loc.txt", "w");
 
-	fwrite($fp, "location =  $loc\n");
-
-    $readable = get_readable_location($loc);
-    //find the latest snow report email
-    $body = Mail::get_most_recent('"SkiMail@snow.com" <SkiMail@snow.com>', '');
-    if( $body )
-    {
-        $summary = get_summaries($body);
-        if( array_key_exists($loc, $summary) )
-        {
-            $report = $summary[$loc];
-            $keys = array_keys($report);
-            for($i = 0; $i < count($keys); $i++)
-            {
-                $key = $keys[$i];
-                fwrite($fp, $key.' = '.$report[$key]."\n");
-            }
-        }
-        else
-        {
-            fwrite($fp, "err.msg=No report data provided today\n");
-        }
-
-        list($lat, $lon, $icon, $url) = get_weather_report($loc);
+		$keys = array_keys($report);
+		for($j = 0; $j < count($keys); $j++)
+		{
+			$key = $keys[$j];
+			fwrite($fp, $key.' = '.$report[$key]."\n");
+		}
+		fwrite($fp, "location.info=".get_details_url($loc)."\n");
+		list($lat, $lon, $icon, $url) = get_weather_report($loc);
 		fwrite($fp, "location.latitude=$lat\n");
 		fwrite($fp, "location.longitude=$lon\n");
 		fwrite($fp, "weather.url=$url\n");
 		fwrite($fp, "weather.icon=$icon\n");
-    }
-    else
-    {
-        fwrite($fp, "err.msg=No ski report data found\n");
-    }
 
-    fclose($fp);
+		fclose($fp);
+	}
 }
 
-/**
- * Parses the email body into a hash map of hashmaps like:
- *  LOCATION=(hash of {snow.daily='24hr, 48hr', snow.total="total", ..)
- */
-function get_summaries($body)
+function get_reports()
 {
-	$summary = array();
+	$contents = file_get_contents("http://snow.com/rssfeeds/snowreports.aspx");
 
-    //find the report date
-    $date = "unknown";
+	//each location is in an <item> tag
+	$locations = preg_split("/<item>/", $contents);
+	//the first item is header junk we can ignore
+	array_shift($locations);
 
-    //look for a string like:
-    //Here are the current snow conditions as of 5:30 AM MST this morning, for Monday, April 6, 2009:
-    $idx = strpos($body, "Here are the current snow conditions as of");
-    if($idx !== false )
-    {
-        $body = substr($body, $idx);
-        $idx = strpos($body, "\n");
-        $buf = substr($body, 0, $idx);
-        $idx = strrpos($buf, ','); //the comma AFTER April 6
-        $buf = substr($body, 0, $idx);
-        $idx = strrpos($buf, ','); //the comma BEFORE April 6
-        $date = substr($buf, $idx+1);
-    }
+	$reports = array();
+	for($i = 0; $i < count($locations); $i++)
+	{
+		$report = get_report($locations[$i]);
+		$loc = get_location($report['location']);
+		$reports[$loc] = $report;
+	}
 
-    //The report is surrounded by the string:
-    //***************************************
-    $start = strpos($body, '***************************************');
-    if( $start !== false )
-    {
-        //39 = length of "*" string
-        $start += 39;
-        $end = strpos($body, '***************************************', $start);
-        $body = substr($body, $start, $end-$start);
+	return $reports;
+}
 
-        $lines = split("\n", $body);
+function get_report($body)
+{
+	$data = array();
+	preg_match_all("/<title>(.*) Resort Snow Report - (.*) - (.*)<\/title/", $body, $matches, PREG_OFFSET_CAPTURE);
+	$data['location'] = $matches[1][0][0];
+	$data['date'] = $matches[3][0][0];
 
-        for($i = 0; $i < count($lines); $i++)
-        {
-            //looking for someting like: Beaver Creek   (www.beavercreek.com)
-            preg_match_all("/(www.)/", $lines[$i], $matches, PREG_OFFSET_CAPTURE);
-            if( count($matches[1]) == 1 )
-            {
-                $data = array();
+	preg_match_all("/New Snow in last 24 hours:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+	$data['snow.daily'] = "24hr: ".$matches[1][0][0];
 
-                $data['date'] = $date;
+	preg_match_all("/New Snow in last 48 hours:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+	$data['snow.daily'] .= " 48hr: ".$matches[1][0][0];
 
-                $idx = $matches[1][0][1];
-                $loc = trim(substr($lines[$i], 0, $idx-1));
-                $url = substr($lines[$i], $idx, strlen($lines[$i])-$idx-1);
+	preg_match_all("/Mid-Mountain:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+		$data['snow.total'] = $matches[1][0][0];
+	else
+		$data['snow.total'] = '?';
 
-                $data['location'] = $loc;
-                $data['details.url'] = 'http://'.$url;
+	preg_match_all("/Runs Open (\d+) of (\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+	$data['trails.open'] = $matches[1][0][0];
+	$data['trails.total'] = $matches[2][0][0];
 
-                //Temp. at 5am MST: 4 F/-16C
-                $conditions = $lines[$i+1];
-                $parts = preg_split('/:/', $conditions);
-                $idx = strpos($parts[1], 'F');
-                $data['temp.readings'] = substr($parts[1], 0, $idx).'F';
+	preg_match_all("/Lifts Open (\d+) of (\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+	$data['lifts.open'] = $matches[1][0][0];
+	$data['lifts.total'] = $matches[2][0][0];
 
-                //conditions look like: Surface Conditions: Powder/Packed Powder
-                $conditions = $lines[$i+2];
-                $parts = preg_split('/:/', $conditions);
-                $data['snow.conditions'] = $parts[1];
+	preg_match_all("/Snow Conditions: (.*?)&lt;/", $body, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+		$data['snow.conditions'] = $matches[1][0][0];
 
-                //24 hr snow looks like: Snowfall in last 24 hours: 5 in.
-                $conditions = $lines[$i+3];
-                $parts = preg_split('/:/', $conditions);
-                $snow24 = $parts[1];
-
-                $conditions = $lines[$i+4];
-                $parts = preg_split('/:/', $conditions);
-                $snowWeek = $parts[1];
-
-                $data['snow.daily'] = "24hr($snow24) Week($snowWeek)";
-
-                //Mid-Mountain Base: 85 in.
-                $conditions = $lines[$i+5];
-                $parts = preg_split('/:/', $conditions);
-                $data['snow.total'] = $parts[1];
-
-                //Percent of Terrain Open: 100%
-                $conditions = $lines[$i+6];
-                $parts = preg_split('/:/', $conditions);
-                $data['trails.open'] = $parts[1];
-
-                $summary[get_location_code($loc)] = $data;
-            }
-        }
-    }
-
-	return $summary;
+	return $data;
 }
 
 //performs the reverse of get_readable_location
-function get_location_code($loc)
+function get_location($loc)
 {
-    if( $loc == 'Vail')
+	if( $loc == 'Vail')
 		return 'VA';
 	if( $loc == 'Beaver Creek')
 		return 'BC';
@@ -227,9 +178,18 @@ function get_readable_location($loc)
 		return 'Keystone';
 	if( $loc == 'BK')
 		return 'Breckenridge';
+}
 
-	//hope this doesn't happen, but be graceful at the least
-	return $loc;
+function get_details_url($loc)
+{
+	if( $loc == 'VA')
+		return 'http://www.vail.com/';
+	if( $loc == 'BC')
+		return 'http://www.beavercreek.com';
+	if( $loc == 'KS')
+		return 'http://www.keystoneresort.com';
+	if( $loc == 'BK')
+		return 'http://www.breckenridge.com';
 }
 
 function get_lat_lon($loc)
