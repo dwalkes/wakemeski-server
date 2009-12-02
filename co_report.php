@@ -26,9 +26,12 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+require_once('weather.inc');
+	
 	header( "Content-Type: text/plain" );
 
     $location = $_GET['location'];
+    $location = "AB";
     //first validate the location:
 	if(!get_readable_location($location))
 	{
@@ -79,7 +82,8 @@ function write_report($loc)
 			fwrite($fp, $key.' = '.$props[$key]."\n");
 		}
 
-        list($lat, $lon, $icon, $url) = get_weather_report($loc);
+		list($lat, $lon) = get_lat_lon($loc);
+        list($icon, $url) = Weather::get_report($lat, $lon);
 		fwrite($fp, "location.latitude=$lat\n");
 		fwrite($fp, "location.longitude=$lon\n");
 		fwrite($fp, "weather.url=$url\n");
@@ -100,39 +104,23 @@ function get_report_props($report)
 {
     $props = array();
     $data = $report->getElementsByTagName('description')->item(0)->nodeValue;
-    $lines = split("<br />", $data);
-    $snow_24 = '';
-    $snow_48 = '';
 
-    for($i = 0; $i < count($lines); $i++)
-    {
-        $line = trim($lines[$i]);
-        list($key, $val) = split(":", $line);
-        if( $key == 'Lifts open' )
-        {
-            list($open, $total) = split("/", $val);
-            $props['lifts.open'] = $open;
-            $props['lifts.total'] = $total;
-        }
-        else if( $key == 'Mid-mountain depth')
-        {
-            $props['snow.total'] = $val;
-        }
-        else if( $key == 'New snow last 24 Hours' )
-        {
-            $snow_24 = $val;
-        }
-        else if( $key == 'New snow last 48 hours' )
-        {
-            $snow_48 = $val;
-        }
-        else if( $key == 'Surface conditions')
-        {
-            $props['snow.conditions'] = $val;
-        }
-    }
-
-    $props['snow.daily'] = "24hr: $snow_24, 48hr: $snow_48";
+    preg_match_all("/New Snow Last 24 Hours: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
+	$day = $matches[1][0][0];
+	preg_match_all("/New Snow Last 48 hours: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
+	$yesterday = $matches[1][0][0];
+	$props['snow.daily'] = "24hr($day) 48hr($yesterday)";	
+	
+	preg_match_all("/Mid-Mountain Depth: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
+	$props['snow.total'] = $matches[1][0][0];
+	
+	preg_match_all("/Lifts Open: (\d+)\/(\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
+	$props['lifts.open'] = $matches[1][0][0];
+	$props['lifts.total'] = $matches[2][0][0];
+	
+	preg_match_all("/Surface Conditions: (.*?)<br/", $data, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+		$props['snow.conditions'] = $matches[1][0][0];
 
     $date = $report->getElementsByTagName('pubDate')->item(0)->nodeValue;
     $date = strtotime($date);
@@ -167,7 +155,6 @@ function get_location_report($loc)
 
 function get_report_xml()
 {
-    //TODO we could cache this
 	$xml = file_get_contents("http://feeds.feedburner.com/snowreport");
     $sxe = simplexml_load_string($xml);
 	return dom_import_simplexml($sxe);
@@ -274,37 +261,4 @@ function get_lat_lon($loc)
     if( $loc == 'WC')
         return array(37.472654, -106.793116);
 }
-
-function get_weather_xml_dom($lat, $lon)
-{
-	$now = time();
-	$tomorrow = $now + (24 * 60 * 60);
-	$start = date('Y-m-d', $now);
-	$end = date('Y-m-d', $tomorrow);
-
-	$url = "http://www.weather.gov/forecasts/xml/SOAP_server/ndfdXMLclient.php?whichClient=NDFDgen&lat=$lat&lon=$lon&listLatLon=&lat1=&lon1=&lat2=&lon2=&resolutionSub=&listLat1=&listLon1=&listLat2=&listLon2=&resolutionList=&endPoint1Lat=&endPoint1Lon=&endPoint2Lat=&endPoint2Lon=&listEndPoint1Lat=&listEndPoint1Lon=&listEndPoint2Lat=&listEndPoint2Lon=&zipCodeList=&listZipCodeList=&centerPointLat=&centerPointLon=&distanceLat=&distanceLon=&resolutionSquare=&listCenterPointLat=&listCenterPointLon=&listDistanceLat=&listDistanceLon=&listResolutionSquare=&citiesLevel=&listCitiesLevel=&sector=&gmlListLatLon=&featureType=&requestedTime=&startTime=&endTime=&compType=&propertyName=&product=glance&begin=$start&end=$end&icons=icons";
-	$xml = file_get_contents($url);
-
-	$sxe = simplexml_load_string($xml);
-	return dom_import_simplexml($sxe);
-}
-
-//returns a list($lat, $long, $icon, $url)
-function get_weather_report($loc)
-{
-	list($lat, $lon) = get_lat_lon($loc);
-
-	$dom = get_weather_xml_dom($lat, $lon);
-
-	//get the weather report URL
-	$node = $dom->getElementsByTagName('moreWeatherInformation')->item(0);
-	$url = $node->firstChild->nodeValue;
-
-	//get the icon for the weather description
-	$node = $dom->getElementsByTagName('icon-link')->item(0);
-	$icon = $node->firstChild->nodeValue;
-
-	return array($lat, $lon, $icon, $url);
-}
-
 ?>
