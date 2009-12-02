@@ -26,6 +26,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+require_once('weather.inc');
+
 	header( "Content-Type: text/plain" );
 
 	//first declare the valid locations
@@ -145,7 +147,9 @@ function cache_summary($location, $report_date, $report, $report2)
 	fwrite($fp, "wind.avg = ".$summary['wind.avg']."\n");
 	fwrite($fp, "details.url=http://www.nwac.us/products/$location\n");
 
-	list($lat, $long, $icon, $url) = get_weather_report($location);
+	global $locations;
+	list($lat, $lon) = $locations[$location];
+	list($icon, $url) = Weather::get_report($lat, $lon);
 	fwrite($fp, "location.latitude=$lat\n");
 	fwrite($fp, "location.longitude=$long\n");
 	fwrite($fp, "weather.url=$url\n");
@@ -322,40 +326,6 @@ function get_report_columns($lines)
 	}
 
 	return 0;
-}
-
-function get_weather_xml_dom($lat, $lon)
-{
-	$now = time();
-	$tomorrow = $now + (24 * 60 * 60);
-	$start = date('Y-m-d', $now);
-	$end = date('Y-m-d', $tomorrow);
-
-	$url = "http://www.weather.gov/forecasts/xml/SOAP_server/ndfdXMLclient.php?whichClient=NDFDgen&lat=$lat&lon=$lon&listLatLon=&lat1=&lon1=&lat2=&lon2=&resolutionSub=&listLat1=&listLon1=&listLat2=&listLon2=&resolutionList=&endPoint1Lat=&endPoint1Lon=&endPoint2Lat=&endPoint2Lon=&listEndPoint1Lat=&listEndPoint1Lon=&listEndPoint2Lat=&listEndPoint2Lon=&zipCodeList=&listZipCodeList=&centerPointLat=&centerPointLon=&distanceLat=&distanceLon=&resolutionSquare=&listCenterPointLat=&listCenterPointLon=&listDistanceLat=&listDistanceLon=&listResolutionSquare=&citiesLevel=&listCitiesLevel=&sector=&gmlListLatLon=&featureType=&requestedTime=&startTime=&endTime=&compType=&propertyName=&product=glance&begin=$start&end=$end&icons=icons";
-	$xml = file_get_contents($url);
-
-	$sxe = simplexml_load_string($xml);
-	return dom_import_simplexml($sxe);
-}
-
-//returns a list($lat, $long, $icon, $url)
-function get_weather_report($loc)
-{
-	global $locations;
-
-	list($lat, $lon) = $locations[$loc];
-
-	$dom = get_weather_xml_dom($lat, $lon);
-
-	//get the weather report URL
-	$node = $dom->getElementsByTagName('moreWeatherInformation')->item(0);
-	$url = $node->firstChild->nodeValue;
-
-	//get the icon for the weather description
-	$node = $dom->getElementsByTagName('icon-link')->item(0);
-	$icon = $node->firstChild->nodeValue;
-
-	return array($lat, $lon, $icon, $url);
 }
 
 ?>
