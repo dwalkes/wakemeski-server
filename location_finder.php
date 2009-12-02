@@ -40,6 +40,7 @@ function show_regions()
 {
     print "Colorado\n";
 	print "New Mexico\n";
+	print "Montana\n";
 	print "Oregon\n";
 	print "Utah\n";
 	print "Washington\n";
@@ -124,6 +125,25 @@ function show_locations($region)
         print "Beaver Creek = $URL_BASE/co_report2.php?location=BC\n";
         print "Keystone = $URL_BASE/co_report2.php?location=KS\n";
         print "Breckenridge = $URL_BASE/co_report2.php?location=BK\n";
+    }
+    else if( $region == "Montana" )
+    {
+		print "Turner Mountain = $URL_BASE/mt_report.php?location=TR\n";
+		print "Maverick Mountain= $URL_BASE/mt_report.php?location=MM\n";
+		print "Lost Trail Powder Mountain= $URL_BASE/mt_report.php?location=LM\n";
+		print "Bear Paw Ski Bowl= $URL_BASE/mt_report.php?location=BP\n";
+		print "Lookout Pass= $URL_BASE/mt_report.php?location=LP\n";
+		print "Discovery= $URL_BASE/mt_report.php?location=DS\n";
+		print "Blacktail Mountain= $URL_BASE/mt_report.php?location=BT\n";
+		print "Big Sky= $URL_BASE/mt_report.php?location=BS\n";
+		print "Great Divide= $URL_BASE/mt_report.php?location=GD\n";
+		print "Showdown= $URL_BASE/mt_report.php?location=SD\n";
+		print "Teton Pass= $URL_BASE/mt_report.php?location=TP\n";
+		print "Whitefish= $URL_BASE/mt_report.php?location=WF\n";
+		print "Red Lodge= $URL_BASE/mt_report.php?location=RL\n";
+		print "Bridger Bowl= $URL_BASE/mt_report.php?location=BB\n";
+		print "Montana Snowbowl= $URL_BASE/mt_report.php?location=MS\n";
+		print "Moonlight Basin= $URL_BASE/mt_report.php?location=MB\n";		
     }
 }
 ?>
