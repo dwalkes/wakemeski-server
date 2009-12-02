@@ -31,7 +31,7 @@ require_once('weather.inc');
 	header( "Content-Type: text/plain" );
 
     $location = $_GET['location'];
-    $location = "AB";
+
     //first validate the location:
 	if(!get_readable_location($location))
 	{
