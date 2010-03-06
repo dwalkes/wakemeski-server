@@ -151,7 +151,7 @@ function cache_summary($location, $report_date, $report, $report2)
 	list($lat, $lon) = $locations[$location];
 	list($icon, $url) = Weather::get_report($lat, $lon);
 	fwrite($fp, "location.latitude=$lat\n");
-	fwrite($fp, "location.longitude=$long\n");
+	fwrite($fp, "location.longitude=$lon\n");
 	fwrite($fp, "weather.url=$url\n");
 	fwrite($fp, "weather.icon=$icon\n");
 
