@@ -242,15 +242,15 @@ function get_location_info($loc)
 		return array('Adelboden', 'http://www.j2ski.mobi/switzerland/adelboden_snow-report.html');
 	if( $loc == 'sevo' )
 		return array('Evolène', 'http://www.j2ski.mobi/switzerland/evolene_snow-report.html');
-    if( $loc == 'swen' )
+	if( $loc == 'swen' )
 		return array('Wengen', 'http://www.j2ski.mobi/switzerland/wengen_snow-report.html');
-    if( $loc == 'skan' )
+	if( $loc == 'skan' )
 		return array('Kandersteg', 'http://www.j2ski.mobi/switzerland/kandersteg_snow-report.html');
-    if( $loc == 'sgrn' )
+	if( $loc == 'sgrn' )
 		return array('Grindelwald', 'http://www.j2ski.mobi/switzerland/grindelwald_snow-report.html');
-    if( $loc == 'svgn' )
+	if( $loc == 'svgn' )
 		return array('Villars - Gryon', 'http://www.j2ski.mobi/switzerland/villars_gryon_snow-report.html');
-    if( $loc == 'sbwd' )
+	if( $loc == 'sbwd' )
 		return array('Braunwald', 'http://www.j2ski.mobi/switzerland/braunwald_snow-report.html');
 
 //france

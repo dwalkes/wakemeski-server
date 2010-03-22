@@ -89,7 +89,7 @@ function write_report($loc)
 		}
 
 		list($lat, $lon) = get_lat_lon($loc);
-        list($icon, $url) = Weather::get_report($lat, $lon);
+		list($icon, $url) = Weather::get_report($lat, $lon);
 		fwrite($fp, "location.latitude=$lat\n");
 		fwrite($fp, "location.longitude=$lon\n");
 		fwrite($fp, "weather.url=$url\n");
@@ -108,7 +108,7 @@ function get_reports()
 	//note the content is technically XML, but its a pretty loose form.
 	//its actually easier to break up with regular expressions than dealing
 	//with it as a DOM
-    $contents = file_get_contents("http://feeds.visitmt.com/rss/?feedid=15");
+	$contents = file_get_contents("http://feeds.visitmt.com/rss/?feedid=15");
 
 	//make everything one line for the regular expressions to work
 	$contents = str_replace("\n", "\t",  $contents);

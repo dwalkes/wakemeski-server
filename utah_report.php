@@ -37,10 +37,10 @@
 	if(!getReadableLocation($location))
 	{
 		print "err.msg=invalid location: $location\n";
-        exit(1);
+		exit(1);
 	}
 
-    $found_cache = have_cache($location);
+	$found_cache = have_cache($location);
 	if( !$found_cache )
 	{
 		write_report($location);
@@ -68,7 +68,7 @@ function have_cache($location)
 
 function write_report($location)
 {
-    $fp = fopen("ut_$location.txt", 'w');
+	$fp = fopen("ut_$location.txt", 'w');
 
 	//find the latest snow report email
 	$body = Mail::get_most_recent('"SkiUtah" <eblast@skiutah.com>', 'Ski Utah Snow Report', true);
@@ -80,7 +80,7 @@ function write_report($location)
 		for($i = 0; $i < count($keys); $i++)
 		{
 			$key = $keys[$i];
-            fwrite($fp, $key.' = '.$report[$key]."\n");
+			fwrite($fp, $key.' = '.$report[$key]."\n");
 		}
 
 		list($lat, $lon) = get_lat_lon($loc);
@@ -95,7 +95,7 @@ function write_report($location)
 		fwrite($fp, "err.msg=No ski report data found\n");
 	}
 
-    fclose($fp);
+	fclose($fp);
 }
 
 /**
@@ -149,7 +149,7 @@ function get_summaries($body)
 		$data['trails.total'] = $matches[2][0][0];
 
 		$summary[$loc] = $data;
-    }
+	}
 
 	return $summary;
 }

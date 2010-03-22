@@ -30,16 +30,16 @@ require_once('weather.inc');
 	
 	header( "Content-Type: text/plain" );
 
-    $location = $_GET['location'];
+	$location = $_GET['location'];
 
-    //first validate the location:
+	//first validate the location:
 	if(!get_readable_location($location))
 	{
 		print "err.msg=invalid location: $location\n";
-        exit(1);
+		exit(1);
 	}
 
-    $found_cache = have_cache($location);
+	$found_cache = have_cache($location);
 	if( !$found_cache )
 	{
 		write_report($location);
@@ -83,7 +83,7 @@ function write_report($loc)
 		}
 
 		list($lat, $lon) = get_lat_lon($loc);
-        list($icon, $url) = Weather::get_report($lat, $lon);
+		list($icon, $url) = Weather::get_report($lat, $lon);
 		fwrite($fp, "location.latitude=$lat\n");
 		fwrite($fp, "location.longitude=$lon\n");
 		fwrite($fp, "weather.url=$url\n");
@@ -102,10 +102,10 @@ function write_report($loc)
  */
 function get_report_props($report)
 {
-    $props = array();
-    $data = $report->getElementsByTagName('description')->item(0)->nodeValue;
+	$props = array();
+	$data = $report->getElementsByTagName('description')->item(0)->nodeValue;
 
-    preg_match_all("/New Snow Last 24 Hours: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
+	preg_match_all("/New Snow Last 24 Hours: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
 	$day = $matches[1][0][0];
 	preg_match_all("/New Snow Last 48 hours: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
 	$yesterday = $matches[1][0][0];
@@ -122,13 +122,13 @@ function get_report_props($report)
 	if( $matches[1][0][0] )
 		$props['snow.conditions'] = $matches[1][0][0];
 
-    $date = $report->getElementsByTagName('pubDate')->item(0)->nodeValue;
-    $date = strtotime($date);
-    $props['date'] = date("h:ia M j", $date);
+	$date = $report->getElementsByTagName('pubDate')->item(0)->nodeValue;
+	$date = strtotime($date);
+	$props['date'] = date("h:ia M j", $date);
 
-    $props['details.url'] = $report->getElementsByTagName('link')->item(0)->nodeValue;
+	$props['details.url'] = $report->getElementsByTagName('link')->item(0)->nodeValue;
 
-    return $props;
+	return $props;
 }
 
 /**
@@ -137,26 +137,26 @@ function get_report_props($report)
  */
 function get_location_report($loc)
 {
-    $dom = get_report_xml();
+	$dom = get_report_xml();
 
-    $items = $dom->getElementsByTagName('item');
-    for ($i = 0; $i < $items->length; $i++)
-    {
-        $title_node = $items->item($i)->getElementsByTagName('title')->item(0);
-        $title = trim($title_node->firstChild->nodeValue);
-        if(preg_match("/$loc/", $title) )
-        {
-            return $items->item($i);
-        }
-    }
+	$items = $dom->getElementsByTagName('item');
+	for ($i = 0; $i < $items->length; $i++)
+	{
+		$title_node = $items->item($i)->getElementsByTagName('title')->item(0);
+		$title = trim($title_node->firstChild->nodeValue);
+		if(preg_match("/$loc/", $title) )
+		{
+		    return $items->item($i);
+		}
+	}
 
-    return false;
+	return false;
 }
 
 function get_report_xml()
 {
 	$xml = file_get_contents("http://feeds.feedburner.com/snowreport");
-    $sxe = simplexml_load_string($xml);
+	$sxe = simplexml_load_string($xml);
 	return dom_import_simplexml($sxe);
 }
 

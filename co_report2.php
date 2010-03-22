@@ -88,7 +88,7 @@ function write_report($loc)
 		}
 		fwrite($fp, "location.info=".get_details_url($loc)."\n");
 		list($lat, $lon) = get_lat_lon($loc);
-        list($icon, $url) = Weather::get_report($lat, $lon);
+		list($icon, $url) = Weather::get_report($lat, $lon);
 		fwrite($fp, "location.latitude=$lat\n");
 		fwrite($fp, "location.longitude=$lon\n");
 		fwrite($fp, "weather.url=$url\n");
