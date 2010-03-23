@@ -26,13 +26,12 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-	require_once('mail.inc');
 	require_once('weather.inc');
 
 	header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
-
+$location = "SBN";
 	//first validate the location:
 	if(!getReadableLocation($location))
 	{
@@ -46,8 +45,16 @@
 		write_report($location);
 	}
 
-	print file_get_contents("ut_$location.txt");
-	print "cache.found=$found_cache\n";
+	$cache_file = "ut_$location.txt";
+	if( is_readable($cache_file) )
+	{
+		print file_get_contents("ut_$location.txt");
+		print "cache.found=$found_cache\n";
+	}
+	else
+	{
+		print "err.msg=No ski report data found\n";
+	}
 
 
 function have_cache($location)
@@ -66,20 +73,17 @@ function have_cache($location)
 	return 0;
 }
 
-function write_report($location)
+function write_report($loc)
 {
-	$fp = fopen("ut_$location.txt", 'w');
-
-	//find the latest snow report email
-	$body = Mail::get_most_recent('"SkiUtah" <eblast@skiutah.com>', 'Ski Utah Snow Report', true);
-	if( $body )
+	$report = get_report($loc);
+	if( $report )
 	{
-		$summary = get_summaries($body);
-		$report = $summary[$location];
+		$fp = fopen("ut_$loc.txt", "w");
+
 		$keys = array_keys($report);
-		for($i = 0; $i < count($keys); $i++)
+		for($j = 0; $j < count($keys); $j++)
 		{
-			$key = $keys[$i];
+			$key = $keys[$j];
 			fwrite($fp, $key.' = '.$report[$key]."\n");
 		}
 
@@ -89,70 +93,76 @@ function write_report($location)
 		fwrite($fp, "location.longitude=$lon\n");
 		fwrite($fp, "weather.url=$url\n");
 		fwrite($fp, "weather.icon=$icon\n");
-	}
-	else
-	{
-		fwrite($fp, "err.msg=No ski report data found\n");
-	}
 
-	fclose($fp);
+		fclose($fp);
+	}
 }
 
-/**
- * Parses the email body into a hash map of hashmaps like:
- *  LOCATION=(hash of {snow.daily='24hr, 48hr', snow.total="total", ..)
- */
-function get_summaries($body)
+function get_url($loc)
 {
-	$summary = array();
+	if( $loc == 'ATA') $val = 'alta_ski_area';
+	else if( $loc == 'BVR') $val = 'beaver_mountain';
+	else if( $loc == 'BHR') $val = 'brian_head_resort';
+	else if( $loc == 'BRT') $val = 'brighton_ski_resort';
+	else if( $loc == 'CNY') $val = 'the_canyons';
+	else if( $loc == 'DVR') $val = 'deer_valley_resort';
+	else if( $loc == 'PCM') $val = 'park_city_mountain_resort';
+	else if( $loc == 'POW') $val = 'powder_mountain_resort';
+	else if( $loc == 'SBN') $val = 'snowbasin';
+	else if( $loc == 'SBD') $val = 'snowbird_ski_and_summer_resort';
+	else if( $loc == 'SOL') $val = 'solitude_mountain_resort';
+	else if( $loc == 'SUN') $val = 'sundance_resort';
+	else if( $loc == 'WLF') $val = 'wolf_creek_utah_ski_resort';
 
-	//the report for each resort is embedded in a bunch of HTML we must
-	//sift through. Each resort is separated by:
-	$reports = split('<table class=3D"resort"', $body);
-	array_shift($reports); //the first portion is junk leading up to the report
-	for($i = 0;  $i < count($reports); $i++)
+	return 'http://www.skiutah.com/winter/members/'.$val.'/resort';
+}
+
+function get_report_contents($url)
+{
+	$contents = file_get_contents($url);
+
+	$idx1 = strpos($contents, "v-ski_resort_snow_report");
+	$idx2 = strpos($contents, "#v-ski_resort_snow_report");
+	if( $idx1 === false || $idx2 === false)
 	{
-		$data = array();
-
-		preg_match_all("/<p><em>(.*)<\/em><\/p>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
-		$data['date'] = $matches[1][0][0];
-
-		preg_match_all("/<h2>(.*)<\/h2>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
-		$loc = getLocation($matches[1][0][0]);
-		//this isn't totally needed, but $matches[1][0][0] is a little more
-		//verbose than what we need
-		$data['location'] = getReadableLocation($loc);
-
-		preg_match_all("/<a href=3D\"(.*?)\"/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
-		$data['location.info'] = $matches[1][0][0];
-
-		//The 24/48 hour snow will be in the format:
-		// New Snow last 24 hours: 0"
-		preg_match_all("/New Snow last (\d{2}) hours: (\d+)\"/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
-		//this should always be 2 (ie 24 and 48) but why hard-code
-		for($j = 0; $j < count($matches[0]); $j++)
-		{
-			$label = $matches[1][$j][0];
-			$val = $matches[2][$j][0];
-			$data['snow.daily'] .= $label."hr(".$val.") ";
-		}
-
-		preg_match_all("/Base: (\d+)\"<\/p>/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
-		$data['snow.total'] = $matches[1][0][0];
-
-		preg_match_all("/Lifts Open: (\d+)\/(\d+)/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
-		$data['lifts.open'] = $matches[1][0][0];
-		$data['lifts.total'] = $matches[2][0][0];
-
-		preg_match_all("/Runs Open: (\d+)\/(\d+)/", $reports[$i], $matches, PREG_OFFSET_CAPTURE);
-		$data['trails.open'] = $matches[1][0][0];
-		$data['trails.total'] = $matches[2][0][0];
-
-		$summary[$loc] = $data;
+		print "err.msg=report format changed. server update required\n";
+		exit(1);
 	}
 
-	return $summary;
+	return substr($contents, $idx1, $idx2-$idx1);
 }
+
+function get_report($loc)
+{
+	$url = get_url($loc);
+	$contents = get_report_contents($url);
+
+	$data = array();
+	$data['location'] = getReadableLocation($loc);
+
+	$data['location.info'] = $url;
+
+	preg_match_all("/Updated: <span>(.*)<\/span/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['date'] = $matches[1][0][0];
+
+	preg_match_all("/Snow Last 24<\/th><td>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['snow.daily'] = "Fresh(".$matches[1][0][0].")";
+
+	preg_match_all("/Snow Last 48<\/th><td>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['snow.daily'] .= " 48hr(".$matches[1][0][0].")";
+
+	preg_match_all("/Base Depth<\/th><td>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['snow.total'] = $matches[1][0][0];
+
+	preg_match_all("/<span>(\d+)<\/span>\/<span>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['trails.open'] = $matches[1][0][0];
+	$data['trails.total'] = $matches[2][0][0];
+	$data['lifts.open'] = $matches[1][1][0];
+	$data['lifts.total'] = $matches[2][1][0];
+
+	return $data;
+}
+
 
 /**
  * Turns a 3 digit code like ATA into Alta
