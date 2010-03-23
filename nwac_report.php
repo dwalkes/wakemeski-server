@@ -113,9 +113,10 @@ function cache_summary($location, $report_date, $report, $report2)
 		}
 		else if(preg_match("/^24/", $name) || preg_match("/^12/", $name))
 		{
-            //NOTE: There is a bug in the NWAC report for OSOSK9 (Steven's)
-            // it reports 12hr rather than 24hr. However its still a 24hr total
-			$summary['snow.daily'] .= "Today($val)";
+			//NOTE: There is a bug in the NWAC report for OSOSK9 (Steven's)
+			// it reports 12hr rather than 24hr. However its still a 24hr total
+			$summary['snow.daily'] .= "Fresh($val)";
+			$summary['snow.fresh'] = $val;
 		}
 		else if(preg_match("/Temp/", $name) )
 		{
@@ -143,6 +144,8 @@ function cache_summary($location, $report_date, $report, $report2)
 	fwrite($fp, "date = $report_date\n");
 	fwrite($fp, "snow.total = ".$summary['snow.total']."\n");
 	fwrite($fp, "snow.daily = ".$summary['snow.daily']."\n");
+	fwrite($fp, "snow.fresh = ".$summary['snow.fresh']."\n");
+	fwrite($fp, "snow.units = inches\n");
 	fwrite($fp, "temp.readings = ".$summary['temp.readings']."\n");
 	fwrite($fp, "wind.avg = ".$summary['wind.avg']."\n");
 	fwrite($fp, "details.url=http://www.nwac.us/products/$location\n");

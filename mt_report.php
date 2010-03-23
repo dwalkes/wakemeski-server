@@ -156,7 +156,9 @@ function get_report($body)
 	$day = $matches[1][0][0];
 	if( !$new ) $new = 0;
 	if( !$day ) $day = 0;
-	$data['snow.daily'] .= "New($new) 24hr($day)";	
+	$data['snow.daily'] = "Fresh($new) 24hr($day)";
+	$data['snow.fresh'] = $new;
+	$data['snow.units'] = 'inches';
 	
 	preg_match_all("/<STRONG>Snow Depth:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(\d+)<\/TD><\/TR>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )

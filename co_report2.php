@@ -126,10 +126,12 @@ function get_report($body)
 	$data['date'] = $matches[3][0][0];
 
 	preg_match_all("/New Snow in last 24 hours:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['snow.daily'] = "24hr: ".$matches[1][0][0];
+	$data['snow.daily'] = "Fresh(".$matches[1][0][0].")";
+	$data['snow.fresh'] = $matches[1][0][0];
+	$data['snow.units'] = 'inches';
 
 	preg_match_all("/New Snow in last 48 hours:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['snow.daily'] .= " 48hr: ".$matches[1][0][0];
+	$data['snow.daily'] .= " 48hr(".$matches[1][0][0].")";
 
 	preg_match_all("/Mid-Mountain:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )

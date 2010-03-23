@@ -129,9 +129,11 @@ function get_report($body)
 	
 	preg_match_all("/New Natural Snow Last 48 Hours: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
-		$data['snow.daily'] = $matches[1][0][0];
+		$data['snow.fresh'] = $matches[1][0][0];
 	else
-		$data['snow.daily'] = 'none';
+		$data['snow.fresh'] = 'none';
+	$data['snow.daily'] = 'Fresh('.$data['snow.fresh'].')';
+	$data['snow.units'] = 'inches';
 		
 	preg_match_all("/Base Snow Depth \(inches\): <b>(.*?)&quot;/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
@@ -175,7 +177,7 @@ function get_details_url($loc)
 	if( $loc == 'SA')
 		return 'http://www.skiapache.com/';
 	if( $loc == 'SF')
-		return 'https://www.skisantafe.com/index.php/snow_report';
+		return 'http://skisantafe.com/index.php?page=snow-report';
 	if( $loc == 'TS')
 		return 'http://www.skitaos.org/snow_reports/index';
 	if( $loc == 'VC')

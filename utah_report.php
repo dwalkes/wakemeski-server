@@ -145,8 +145,10 @@ function get_report($loc)
 	preg_match_all("/Updated: <span>(.*)<\/span/", $contents, $matches, PREG_OFFSET_CAPTURE);
 	$data['date'] = $matches[1][0][0];
 
+	$data['snow.units'] = 'inches';
 	preg_match_all("/Snow Last 24<\/th><td>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
 	$data['snow.daily'] = "Fresh(".$matches[1][0][0].")";
+	$data['snow.fresh'] = $matches[1][0][0];
 
 	preg_match_all("/Snow Last 48<\/th><td>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
 	$data['snow.daily'] .= " 48hr(".$matches[1][0][0].")";

@@ -66,16 +66,16 @@ function have_cache($location)
 
 function write_report($loc)
 {
-    $fp = fopen("co_$loc.txt", 'w');
+	$fp = fopen("co_$loc.txt", 'w');
 
 	fwrite($fp, "location =  $loc\n");
 
-    $readable = get_readable_location($loc);
-    $report = get_location_report($readable);
-    if( $report )
-    {
-        $props = get_report_props($report);
-        $keys = array_keys($props);
+	$readable = get_readable_location($loc);
+	$report = get_location_report($readable);
+	if( $report )
+	{
+		$props = get_report_props($report);
+		$keys = array_keys($props);
 		for($i = 0; $i < count($keys); $i++)
 		{
 			$key = $keys[$i];
@@ -88,13 +88,13 @@ function write_report($loc)
 		fwrite($fp, "location.longitude=$lon\n");
 		fwrite($fp, "weather.url=$url\n");
 		fwrite($fp, "weather.icon=$icon\n");
-    }
-    else
-    {
-        fwrite($fp, "err.msg=No ski report data found\n");
-    }
+	}
+	else
+	{
+		fwrite($fp, "err.msg=No ski report data found\n");
+	}
 
-    fclose($fp);
+	fclose($fp);
 }
 
 /**
@@ -109,7 +109,9 @@ function get_report_props($report)
 	$day = $matches[1][0][0];
 	preg_match_all("/New Snow Last 48 hours: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
 	$yesterday = $matches[1][0][0];
-	$props['snow.daily'] = "24hr($day) 48hr($yesterday)";	
+	$props['snow.daily'] = "Fresh($day) 48hr($yesterday)";
+	$props['snow.fresh'] = $day;
+	$props['snow.units'] = 'inches';
 	
 	preg_match_all("/Mid-Mountain Depth: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
 	$props['snow.total'] = $matches[1][0][0];

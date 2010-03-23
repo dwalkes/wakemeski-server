@@ -109,8 +109,10 @@ function get_report_props($url, $report)
 	$lower = $matches[1][0][0];
 	$props['snow.total'] = "Lower ($lower), Upper($upper)";
 
-	preg_match_all("/<th>Fresh Snow<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE);
-	$props['snow.daily'] = $matches[1][0][0]." fresh";
+	preg_match_all("/<th>Fresh Snow<\/th><td>(\d+)/", $report, $matches, PREG_OFFSET_CAPTURE);
+	$props['snow.daily'] = "Fresh(".$matches[1][0][0]."cm)";
+	$props['snow.fresh'] = $matches[1][0][0];
+	$props['snow.units'] = 'cm';
 
 	preg_match_all("/<th>Area Open<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE);
 	$props['trails.total'] = $matches[1][0][0];
