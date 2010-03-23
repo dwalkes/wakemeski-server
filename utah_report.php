@@ -31,7 +31,7 @@
 	header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
-$location = "SBN";
+
 	//first validate the location:
 	if(!getReadableLocation($location))
 	{
