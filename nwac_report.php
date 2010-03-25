@@ -27,8 +27,9 @@
  */
 
 require_once('weather.inc');
+require_once('common.inc');
 
-	header( "Content-Type: text/plain" );
+header( "Content-Type: text/plain" );
 
 	//first declare the valid locations
 	$locations = array();
@@ -49,7 +50,8 @@ require_once('weather.inc');
 
 	check_location($location);
 
-	$found_cache = have_cache($location);
+	$cache_file = 'nwac_'.$location.'.txt';
+	$found_cache = cache_available($cache_file, 1200); //60*20 = 20 minutes
 	if( !$found_cache )
 	{
 		//report 1 (the current day's info)
@@ -67,8 +69,7 @@ require_once('weather.inc');
 		cache_summary($location, $report_date, $report, $report2);
 	}
 
-	print file_get_contents("nwac_$location.txt");
-	print "cache.found=$found_cache\n";
+	cache_dump($cache_file, $found_cache);
 
 function check_location($location)
 {
@@ -79,22 +80,6 @@ function check_location($location)
 		print "ERROR: invalid location [$location]\n";
 		exit(1);
 	}
-}
-
-function have_cache($location)
-{
-	$file = "nwac_$location.txt";
-	if( is_readable($file))
-	{
-		//get modification time stamp. If its less than
-		//20 minutes old, use that copy
-		$mod = filemtime($file);
-		if( time() - $mod < 1200 ) //=60*20 = 20 minutes
-		{
-			return 1;
-		}
-	}
-	return 0;
 }
 
 function cache_summary($location, $report_date, $report, $report2)

@@ -27,8 +27,9 @@
  */
 
 require_once('weather.inc');
+require_once('common.inc');
 	
-	header( "Content-Type: text/plain" );
+header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
@@ -39,30 +40,15 @@ require_once('weather.inc');
 		exit(1);
 	}
 
-	$found_cache = have_cache($location);
+	$cache_file = 'co_'.$location.'.txt';
+	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
 	{
 		write_report($location);
 	}
 
-	print file_get_contents("co_$location.txt");
-	print "cache.found=$found_cache\n";
+	cache_dump($cache_file, $found_cache);
 
-function have_cache($location)
-{
-	$file = "co_$location.txt";
-	if( is_readable($file))
-	{
-		//get modification time stamp. If its less than
-		//120 minutes old, use that copy
-		$mod = filemtime($file);
-		if( time() - $mod < 7200 ) //=60*120 = 120 minutes
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
 
 function write_report($loc)
 {
