@@ -46,39 +46,31 @@ header( "Content-Type: text/plain" );
 	{
 		write_report($location);
 	}
-	
+
 	cache_dump($cache_file, $found_cache);
 
 function write_report($loc)
 {
-	$fp = fopen("eu_$loc.txt", 'w');
-
-	fwrite($fp, "location = $loc\n");
+	global $cache_file;
 
 	list($readable, $url) = get_location_info($loc);
 	$report = get_report($url);
 	if( $report )
 	{
 		$props = get_report_props($url, $report);
-		$keys = array_keys($props);
-		for($i = 0; $i < count($keys); $i++)
-		{
-			$key = $keys[$i];
-			fwrite($fp, $key.' = '.$props[$key]."\n");
-		}
-		fwrite($fp, "location.info=$url\n");
+		$props['location'] = $loc;
+		$props['location.info'] = $url;
 
 /*TODO, change get_location_info to return this
 		fwrite($fp, "location.latitude=$lat\n");
 		fwrite($fp, "location.longitude=$lon\n");
 */
+		cache_create($cache_file, $props);
 	}
 	else
 	{
-		fwrite($fp, "err.msg=No ski report data found\n");
+		print("err.msg=No ski report data found\n");
 	}
-
-	fclose($fp);
 }
 
 /**
@@ -128,26 +120,29 @@ function get_report($url)
 
 function get_weather_icon($url)
 {
-    $weather = get_report($url);
-    preg_match_all("/<img alt=\"(.*?)\"/", $weather, $matches, PREG_OFFSET_CAPTURE);
+	$weather = get_report($url);
+	preg_match_all("/<img alt=\"(.*?)\"/", $weather, $matches, PREG_OFFSET_CAPTURE);
 
-    switch(strtolower($matches[1][0][0]))
-    {
-        case 'sunny/clear':
-            return 'skc';
-        case 'fair': //cloud with sun
-            return 'sct';
-        case 'light snow':
-            return 'mix';
-        case 'snow':
-        case 'heavy snow':
-            return 'blizzard';
-        case 'cloudy':
-            return 'ovc';
-        case 'partly cloudy': //little sun most cloud
-            return 'bkn';
-    }
-    return $matches[1][0][0];
+	switch(strtolower($matches[1][0][0]))
+	{
+		case 'sunny/clear':
+			return 'skc';
+		case 'fair': //cloud with sun
+			return 'sct';
+		case 'light snow':
+			return 'mix';
+		case 'snow':
+		case 'heavy snow':
+			return 'blizzard';
+		case 'cloudy':
+			return 'ovc';
+		case 'partly cloudy': //little sun most cloud
+			return 'bkn';
+		case 'light rain':
+		case 'rain':
+			return 'ra';
+	}
+	return $matches[1][0][0];
 }
 
 /**

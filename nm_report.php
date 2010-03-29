@@ -55,30 +55,25 @@ function write_report($loc)
 	$report = $reports[$loc];
 	if( $report )
 	{
-		$fp = fopen("nm_$loc.txt", "w");
-		
-		$keys = array_keys($report);
-		for($j = 0; $j < count($keys); $j++)
-		{
-			$key = $keys[$j];
-			fwrite($fp, $key.' = '.$report[$key]."\n");
-		}
-		fwrite($fp, "location.info=".get_details_url($loc)."\n");
+		global $cache_file;
+
+		$report['location.info'] = get_details_url($loc);
+
 		list($lat, $lon) = get_lat_lon($loc);
-		list($icon, $url) = Weather::get_report($lat, $lon);
-		fwrite($fp, "location.latitude=$lat\n");
-		fwrite($fp, "location.longitude=$lon\n");
-		fwrite($fp, "weather.url=$url\n");
-		fwrite($fp, "weather.icon=$icon\n");
-		
-		fclose($fp);
+		Weather::set_props($lat, $lon, &$report);
+
+		cache_create($cache_file, $report);
+	}
+	else
+	{
+		print("err.msg=No ski report data found\n");
 	}
 }
 
 function get_reports()
 {
 	$contents = file_get_contents("http://skinewmexico.com/snow_reports/feed.rss");
-	
+
 	//each location is in an <item> tag
 	$locations = preg_split("/<item>/", $contents);
 	//the first item is header junk we can ignore
@@ -90,8 +85,8 @@ function get_reports()
 		$report = get_report($locations[$i]);
 		$loc = get_location($report['location']);
 		$reports[$loc] = $report;
-	}	
-	
+	}
+
 	return $reports;
 }
 
@@ -100,10 +95,10 @@ function get_report($body)
 	$data = array();
 	preg_match_all("/<h1>(.*)<\/h1/", $body, $matches, PREG_OFFSET_CAPTURE);
 	$data['location'] = $matches[1][0][0];
-	
-	preg_match_all("/<pubDate>(.*)<\/pubDate>/", $body, $matches, PREG_OFFSET_CAPTURE);	
+
+	preg_match_all("/<pubDate>(.*)<\/pubDate>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	$data['date'] = $matches[1][0][0];
-	
+
 	preg_match_all("/New Natural Snow Last 48 Hours: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 		$data['snow.fresh'] = $matches[1][0][0];
@@ -111,13 +106,13 @@ function get_report($body)
 		$data['snow.fresh'] = 'none';
 	$data['snow.daily'] = 'Fresh('.$data['snow.fresh'].')';
 	$data['snow.units'] = 'inches';
-		
+
 	preg_match_all("/Base Snow Depth \(inches\): <b>(.*?)&quot;/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 		$data['snow.total'] = $matches[1][0][0];
 	else
 		$data['snow.total'] = '?';
-		
+
 	preg_match_all("/Trails Open: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 		$data['trails.open'] = $matches[1][0][0];

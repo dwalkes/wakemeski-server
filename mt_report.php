@@ -55,23 +55,16 @@ function write_report($loc)
 	$report = $reports[$loc];
 	if( $report )
 	{
-		$fp = fopen("mt_$loc.txt", "w");
-		
-		$keys = array_keys($report);
-		for($j = 0; $j < count($keys); $j++)
-		{
-			$key = $keys[$j];
-			fwrite($fp, $key.' = '.$report[$key]."\n");
-		}
+		global $cache_file;
 
 		list($lat, $lon) = get_lat_lon($loc);
-		list($icon, $url) = Weather::get_report($lat, $lon);
-		fwrite($fp, "location.latitude=$lat\n");
-		fwrite($fp, "location.longitude=$lon\n");
-		fwrite($fp, "weather.url=$url\n");
-		fwrite($fp, "weather.icon=$icon\n");
-		
-		fclose($fp);
+		Weather::set_props($lat, $lon, &$report);
+
+		cache_create($cache_file, $report);
+	}
+	else
+	{
+		print("err.msg=No ski report data found\n");
 	}
 }
 
@@ -88,7 +81,7 @@ function get_reports()
 
 	//make everything one line for the regular expressions to work
 	$contents = str_replace("\n", "\t",  $contents);
-	
+
 	//each location is in an <item> tag
 	$locations = preg_split("/<item>/", $contents);
 	//the first item is header junk we can ignore
@@ -108,8 +101,8 @@ function get_reports()
 				continue;
 		}
 		$reports[$loc] = $report;
-	}	
-	
+	}
+
 	return $reports;
 }
 
@@ -119,13 +112,13 @@ function get_report($body)
 	preg_match_all("/<title>(.*)<\/title>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	$loc = getLocation($matches[1][0][0]);
 	$data['location'] = getReadableLocation($loc);
-	
+
 	preg_match_all("/<link>(.*)<\/link>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	$data['location.info'] = $matches[1][0][0];
 
-	preg_match_all("/<pubDate>(.*)<\/pubDate>/", $body, $matches, PREG_OFFSET_CAPTURE);	
+	preg_match_all("/<pubDate>(.*)<\/pubDate>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	$data['date'] = $matches[1][0][0];
-	
+
 	preg_match_all("/<STRONG>New Snow:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(.*?)<\/TD>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	$new = $matches[1][0][0];
 	preg_match_all("/Snow in Last 24 Hours<\/STRONG><\/TD><TD ALIGN='RIGHT'>(\d+)<\/TD>/", $body, $matches, PREG_OFFSET_CAPTURE);
@@ -135,24 +128,24 @@ function get_report($body)
 	$data['snow.daily'] = "Fresh($new) 24hr($day)";
 	$data['snow.fresh'] = $new;
 	$data['snow.units'] = 'inches';
-	
+
 	preg_match_all("/<STRONG>Snow Depth:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(\d+)<\/TD><\/TR>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 		$data['snow.total'] = $matches[1][0][0];
 	else
 		$data['snow.total'] = '--';
-	
+
 	preg_match_all("/Tempurature:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(.*?)<\/TD>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( !$matches[1][0][0] )
 		preg_match_all("/Temperature:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(.*?)<\/TD>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 		$data['temp.readings'] = $matches[1][0][0];
-	
-		
+
+
 	preg_match_all("/Surface Conditions:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(.*?)<\/TD><\/TR>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 		$data['snow.conditions'] = $matches[1][0][0];
-	
+
 	return $data;
 }
 

@@ -36,7 +36,7 @@ function cache_available($file, $age=7200)
 		return false;
 
 	if( is_readable($file))
-	{	
+	{
 		//get modification time stamp. If its less than
 		//age, use that copy
 		$mod = filemtime($file);
@@ -44,6 +44,30 @@ function cache_available($file, $age=7200)
 			return true;
 	}
 	return false;
+}
+
+/**
+ * Creates the cache file with the report information
+ */
+function cache_create($file, $report)
+{
+	$fp = fopen($file, 'w');
+
+	if( $report )
+	{
+		$keys = array_keys($report);
+		for($i = 0; $i < count($keys); $i++)
+		{
+			$key = $keys[$i];
+			fwrite($fp, $key.' = '.$report[$key]."\n");
+		}
+	}
+	else
+	{
+		fwrite($fp, "err.msg=No ski report data found\n");
+	}
+
+	fclose($fp);
 }
 
 /**

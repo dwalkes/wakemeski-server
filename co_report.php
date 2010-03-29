@@ -28,7 +28,7 @@
 
 require_once('weather.inc');
 require_once('common.inc');
-	
+
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
@@ -52,35 +52,25 @@ header( "Content-Type: text/plain" );
 
 function write_report($loc)
 {
-	$fp = fopen("co_$loc.txt", 'w');
-
-	fwrite($fp, "location =  $loc\n");
+	global $cache_file;
 
 	$readable = get_readable_location($loc);
 	$report = get_location_report($readable);
 	if( $report )
 	{
 		$props = get_report_props($report);
-		$keys = array_keys($props);
-		for($i = 0; $i < count($keys); $i++)
-		{
-			$key = $keys[$i];
-			fwrite($fp, $key.' = '.$props[$key]."\n");
-		}
+
+		$props['location'] = $loc;
 
 		list($lat, $lon) = get_lat_lon($loc);
-		list($icon, $url) = Weather::get_report($lat, $lon);
-		fwrite($fp, "location.latitude=$lat\n");
-		fwrite($fp, "location.longitude=$lon\n");
-		fwrite($fp, "weather.url=$url\n");
-		fwrite($fp, "weather.icon=$icon\n");
+		Weather::set_props($lat, $lon, &$props);
+
+		cache_create($cache_file, $props);
 	}
 	else
 	{
-		fwrite($fp, "err.msg=No ski report data found\n");
+		print("err.msg=No ski report data found\n");
 	}
-
-	fclose($fp);
 }
 
 /**
@@ -98,14 +88,14 @@ function get_report_props($report)
 	$props['snow.daily'] = "Fresh($day) 48hr($yesterday)";
 	$props['snow.fresh'] = $day;
 	$props['snow.units'] = 'inches';
-	
+
 	preg_match_all("/Mid-Mountain Depth: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
 	$props['snow.total'] = $matches[1][0][0];
-	
+
 	preg_match_all("/Lifts Open: (\d+)\/(\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
 	$props['lifts.open'] = $matches[1][0][0];
 	$props['lifts.total'] = $matches[2][0][0];
-	
+
 	preg_match_all("/Surface Conditions: (.*?)<br/", $data, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 		$props['snow.conditions'] = $matches[1][0][0];
@@ -153,50 +143,28 @@ function get_report_xml()
  */
 function get_readable_location($loc)
 {
-	if( $loc == 'AB')
-		return 'Arapahoe Basin';
-    if( $loc =='AH' )
-        return 'Aspen Highlands';
-    if( $loc =='AM' )
-        return 'Aspen Mountain';
-    if( $loc =='BM' )
-        return 'Buttermilk';
-    if( $loc =='CM' )
-        return 'Copper Mountain';
-    if( $loc =='CB' )
-        return 'Crested Butte';
-    if( $loc =='EM' )
-        return 'Echo Mountain';
-    if( $loc =='EL' )
-        return 'Eldora';
-    if( $loc =='HW' )
-        return 'Howelsen';
-    if( $loc =='LV' )
-        return 'Loveland';
-    if( $loc =='MM' )
-        return 'Monarch Mountain';
-    if( $loc =='PH' )
-        return 'Powderhorn';
-    if( $loc =='PG' )
-        return 'Purgatory';
-    if( $loc == 'SM')
-        return 'Silverton Mountain';
-    if( $loc == 'SC')
-        return 'Ski Cooper';
-    if( $loc == 'SN')
-        return 'Snowmass';
-    if( $loc == 'SV')
-        return 'Sol Vista Basin';
-    if( $loc == 'ST')
-        return 'Steamboat';
-    if( $loc == 'SL')
-        return 'Sunlight';
-    if( $loc == 'TD')
-        return 'Telluride';
-    if( $loc == 'WP')
-        return 'Winter Park';
-    if( $loc == 'WC')
-        return 'Wolf Creek';
+	if( $loc == 'AB') return 'Arapahoe Basin';
+	if( $loc =='AH' ) return 'Aspen Highlands';
+	if( $loc =='AM' ) return 'Aspen Mountain';
+	if( $loc =='BM' ) return 'Buttermilk';
+	if( $loc =='CM' ) return 'Copper Mountain';
+	if( $loc =='CB' ) return 'Crested Butte';
+	if( $loc =='EM' ) return 'Echo Mountain';
+	if( $loc =='EL' ) return 'Eldora';
+	if( $loc =='HW' ) return 'Howelsen';
+	if( $loc =='LV' ) return 'Loveland';
+	if( $loc =='MM' ) return 'Monarch Mountain';
+	if( $loc =='PH' ) return 'Powderhorn';
+	if( $loc =='PG' ) return 'Purgatory';
+	if( $loc == 'SM') return 'Silverton Mountain';
+	if( $loc == 'SC') return 'Ski Cooper';
+	if( $loc == 'SN') return 'Snowmass';
+	if( $loc == 'SV') return 'Sol Vista Basin';
+	if( $loc == 'ST') return 'Steamboat';
+	if( $loc == 'SL') return 'Sunlight';
+	if( $loc == 'TD') return 'Telluride';
+	if( $loc == 'WP') return 'Winter Park';
+	if( $loc == 'WC') return 'Wolf Creek';
 
 	//hope this doesn't happen, but be graceful at the least
 	return $loc;
@@ -204,49 +172,27 @@ function get_readable_location($loc)
 
 function get_lat_lon($loc)
 {
-    if( $loc == 'AB')
-		return array(39.6448, -105.871);
-    if( $loc =='AH' )
-        return array(39.181711, -106.856121);
-    if( $loc =='AM' )
-        return array(39.18428, -106.821903);
-    if( $loc =='BM' )
-        return array(39.205167, -106.859294);
-    if( $loc =='CM' )
-        return array(39.4944, -106.138732);
-    if( $loc =='CB' )
-        return array(38.899932, -106.964249);
-    if( $loc =='EM' )
-        return array(37.591389, -107.571726);
-    if( $loc =='EL' )
-        return array(39.937341, -105.5853);
-    if( $loc =='HW' )
-        return array(40.480533, -106.840605);
-    if( $loc =='LV' )
-        return array(39.680191, -105.898114);
-    if( $loc =='MM' )
-        return array(38.512285, -106.332957);
-    if( $loc =='PH' )
-        return array(39.068912, -108.15068);
-    if( $loc =='PG' )
-        return array(37.629261, -107.815288);
-    if( $loc == 'SM')
-        return array(37.791067, -107.666171);
-    if( $loc == 'SC')
-        return array(39.358897, -106.299256);
-    if( $loc == 'SN')
-        return array(39.162132, -106.787847);
-    if( $loc == 'SV')
-        return array(40.04784, -105.898969);
-    if( $loc == 'ST')
-        return array(40.458905, -106.802092);
-    if( $loc == 'SL')
-        return array(39.398121, -107.339174);
-    if( $loc == 'TD')
-        return array(37.9392, -107.8163);
-    if( $loc == 'WP')
-        return array(39.886791, -105.764279);
-    if( $loc == 'WC')
-        return array(37.472654, -106.793116);
+	if( $loc == 'AB') return array(39.6448,   -105.871);
+	if( $loc =='AH' ) return array(39.181711, -106.856121);
+	if( $loc =='AM' ) return array(39.18428,  -106.821903);
+	if( $loc =='BM' ) return array(39.205167, -106.859294);
+	if( $loc =='CM' ) return array(39.4944,   -106.138732);
+	if( $loc =='CB' ) return array(38.899932, -106.964249);
+	if( $loc =='EM' ) return array(37.591389, -107.571726);
+	if( $loc =='EL' ) return array(39.937341, -105.5853);
+	if( $loc =='HW' ) return array(40.480533, -106.840605);
+	if( $loc =='LV' ) return array(39.680191, -105.898114);
+	if( $loc =='MM' ) return array(38.512285, -106.332957);
+	if( $loc =='PH' ) return array(39.068912, -108.15068);
+	if( $loc =='PG' ) return array(37.629261, -107.815288);
+	if( $loc == 'SM') return array(37.791067, -107.666171);
+	if( $loc == 'SC') return array(39.358897, -106.299256);
+	if( $loc == 'SN') return array(39.162132, -106.787847);
+	if( $loc == 'SV') return array(40.04784,  -105.898969);
+	if( $loc == 'ST') return array(40.458905, -106.802092);
+	if( $loc == 'SL') return array(39.398121, -107.339174);
+	if( $loc == 'TD') return array(37.9392,   -107.8163);
+	if( $loc == 'WP') return array(39.886791, -105.764279);
+	if( $loc == 'WC') return array(37.472654, -106.793116);
 }
 ?>

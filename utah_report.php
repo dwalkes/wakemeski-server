@@ -54,23 +54,12 @@ function write_report($loc)
 	$report = get_report($loc);
 	if( $report )
 	{
-		$fp = fopen("ut_$loc.txt", "w");
-
-		$keys = array_keys($report);
-		for($j = 0; $j < count($keys); $j++)
-		{
-			$key = $keys[$j];
-			fwrite($fp, $key.' = '.$report[$key]."\n");
-		}
+		global $cache_file;
 
 		list($lat, $lon) = get_lat_lon($loc);
-		list($icon, $url) = Weather::get_report($lat, $lon);
-		fwrite($fp, "location.latitude=$lat\n");
-		fwrite($fp, "location.longitude=$lon\n");
-		fwrite($fp, "weather.url=$url\n");
-		fwrite($fp, "weather.icon=$icon\n");
+		Weather::set_props($lat, $lon, &$report);
 
-		fclose($fp);
+		cache_create($cache_file, $report);
 	}
 }
 

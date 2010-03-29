@@ -125,25 +125,18 @@ function cache_summary($location, $report_date, $report, $report2)
 
 	$fp = fopen("nwac_$location.txt", 'w');
 
-	fwrite($fp, "location =  $location\n");
-	fwrite($fp, "date = $report_date\n");
-	fwrite($fp, "snow.total = ".$summary['snow.total']."\n");
-	fwrite($fp, "snow.daily = ".$summary['snow.daily']."\n");
-	fwrite($fp, "snow.fresh = ".$summary['snow.fresh']."\n");
-	fwrite($fp, "snow.units = inches\n");
-	fwrite($fp, "temp.readings = ".$summary['temp.readings']."\n");
-	fwrite($fp, "wind.avg = ".$summary['wind.avg']."\n");
-	fwrite($fp, "details.url=http://www.nwac.us/products/$location\n");
+	$summary['location'] = $location;
+	$summary['date'] = $report_date;
+	$summary['snow.units'] = 'inches';
+	$summary['details.url'] = "http://www.nwac.us/products/$location";
 
 	global $locations;
+	global $cache_file;
 	list($lat, $lon) = $locations[$location];
-	list($icon, $url) = Weather::get_report($lat, $lon);
-	fwrite($fp, "location.latitude=$lat\n");
-	fwrite($fp, "location.longitude=$lon\n");
-	fwrite($fp, "weather.url=$url\n");
-	fwrite($fp, "weather.icon=$icon\n");
 
-	fclose($fp);
+	Weather::set_props($lat, $lon, &$summary);
+
+	cache_create($cache_file, $summary);
 }
 
 // returns an array of list(metric, measurment)

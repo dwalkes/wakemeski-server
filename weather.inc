@@ -25,7 +25,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 class Weather
 {
 	static function _get_xml_dom($lat, $lon)
@@ -57,5 +57,19 @@ class Weather
 
 		return array($icon, $url);
 	}
-}
 
+	/**
+	 * Sets gets the weather user get_report and sets the standard report
+	 * properties weather.url, weather.icon, location.latitude,
+	 * location.longitude in $props array
+	 */
+	static function set_props($lat, $lon, $props)
+	{
+		list($icon, $url) = Weather::get_report($lat, $lon);
+
+		$props['location.latitude'] = $lat;
+		$props['location.longitude'] = $lon;
+		$props['weather.url'] = $url;
+		$props['weather.icon']= $icon;
+	}
+}

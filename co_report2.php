@@ -52,27 +52,22 @@ header( "Content-Type: text/plain" );
 
 function write_report($loc)
 {
+	global $cache_file;
+
 	$reports = get_reports();
-	$report = $reports[$loc];
-	if( $report )
+	$props = $reports[$loc];
+	if( $props )
 	{
-		$fp = fopen("co2_$loc.txt", "w");
+		$props['location.info'] = get_details_url($loc);
 
-		$keys = array_keys($report);
-		for($j = 0; $j < count($keys); $j++)
-		{
-			$key = $keys[$j];
-			fwrite($fp, $key.' = '.$report[$key]."\n");
-		}
-		fwrite($fp, "location.info=".get_details_url($loc)."\n");
 		list($lat, $lon) = get_lat_lon($loc);
-		list($icon, $url) = Weather::get_report($lat, $lon);
-		fwrite($fp, "location.latitude=$lat\n");
-		fwrite($fp, "location.longitude=$lon\n");
-		fwrite($fp, "weather.url=$url\n");
-		fwrite($fp, "weather.icon=$icon\n");
+		Weather::set_props($lat, $lon, &$props);
 
-		fclose($fp);
+		cache_create($cache_file, $props);
+	}
+	else
+	{
+		print("err.msg=No ski report data found\n");
 	}
 }
 
