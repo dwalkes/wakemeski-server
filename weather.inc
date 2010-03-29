@@ -42,7 +42,23 @@ class Weather
 		return dom_import_simplexml($sxe);
 	}
 
-	//returns a list($icon, $url)
+	/**
+	 * Searches through the DOM for the time-layout node with a layout-key
+	 * node equal to $layout
+	 */
+	private static function find_time_layout($dom, $layout)
+	{
+		$nodes = $dom->getElementsByTagName('time-layout');
+		foreach( $nodes as $node )
+		{
+			$val = $node->getElementsByTagName('layout-key')->item(0)->textContent;
+			if( $val == $layout )
+				return $node;
+		}
+	}
+
+	//returns a list($icon, $url, $forecast)
+	// forecast is an array of (array("when"=>"Tonight", "desc"=>"forecast"))
 	static function get_report($lat, $lon)
 	{
 		$dom = Weather::_get_xml_dom($lat, $lon);
@@ -55,7 +71,24 @@ class Weather
 		$node = $dom->getElementsByTagName('icon-link')->item(0);
 		$icon = $node->firstChild->nodeValue;
 
-		return array($icon, $url);
+		//get the "worded forecast", we'll use the first three
+		$worded = $dom->getElementsByTagName('wordedForecast')->item(0);
+		$descriptions = $worded->getElementsByTagName('text');
+
+		//get the "when's" for the forecast
+		$layout = $worded->getAttribute('time-layout');
+		$node = Weather::find_time_layout($dom, $layout);
+		$times = $node->getElementsByTagName('start-valid-time');
+
+		$forecast = array();
+
+		for( $i = 0; $i < 3; $i++ )
+		{
+			$forecast[$i]['when'] = $times->item($i)->getAttribute('period-name');
+			$forecast[$i]['desc'] = $descriptions->item($i)->textContent;
+		}
+
+		return array($icon, $url, $forecast);
 	}
 
 	/**
@@ -65,11 +98,17 @@ class Weather
 	 */
 	static function set_props($lat, $lon, $props)
 	{
-		list($icon, $url) = Weather::get_report($lat, $lon);
+		list($icon, $url, $forecast) = Weather::get_report($lat, $lon);
 
 		$props['location.latitude'] = $lat;
 		$props['location.longitude'] = $lon;
 		$props['weather.url'] = $url;
 		$props['weather.icon']= $icon;
+
+		for($i = 0; $i < count($forecast); $i++)
+		{
+			$props["weather.forecast.when.$i"] = $forecast[$i]['when'];
+			$props["weather.forecast.desc.$i"] = $forecast[$i]['desc'];
+		}
 	}
 }
