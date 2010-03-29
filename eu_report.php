@@ -26,34 +26,30 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('weather.inc');
 require_once('common.inc');
 
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
-	//first validate the location:
-	if(!get_location_info($location))
-	{
-		print "err.msg=invalid location: $location\n";
-		exit(1);
-	}
+	$resorts = build_resorts_table();
+
+	resort_assert_location($resorts, $location);
 
 	$cache_file = 'eu_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
 	{
-		write_report($location);
+		write_report($resorts, $location, $cache_file);
 	}
 
 	cache_dump($cache_file, $found_cache);
 
-function write_report($loc)
+function write_report($resorts, $loc, $cache_file)
 {
-	global $cache_file;
+	$readable = resort_get_readable_location($resorts, $loc);
+	$url = resort_get_info_url($resorts, $loc);
 
-	list($readable, $url) = get_location_info($loc);
 	$report = get_report($url);
 	if( $report )
 	{
@@ -145,102 +141,57 @@ function get_weather_icon($url)
 	return $matches[1][0][0];
 }
 
-/**
- * Turns a 4 digit code like fchm and returns a tuple
- * (Chamonix, http://www.j2ski.mobi/france/chamonix_snow-report.html)
- */
-function get_location_info($loc)
+function build_resorts_table()
 {
 //switzerland
-	if( $loc == 'seng')
-		return array('Engelberg', 'http://www.j2ski.mobi/switzerland/engelberg_snow-report.html');
-	if( $loc == 'sand' )
-		return array('Andermatt', 'http://www.j2ski.mobi/switzerland/andermatt_snow-report.html');
-	if( $loc == 'sanz' )
-		return array('Anzère', 'http://www.j2ski.mobi/switzerland/anzere_snow-report.html');
-	if( $loc == 'slax' )
-		return array('Laax', 'http://www.j2ski.mobi/switzerland/laax_snow-report.html');
-	if( $loc == 'sflf' )
-		return array('Flims-Laax-Falera', 'http://www.j2ski.mobi/switzerland/flims_laax_falera_snow-report.html');
-	if( $loc == 'sssf' )
-		return array('Saas-Fee', 'http://www.j2ski.mobi/switzerland/saas_fee_snow-report.html');
-	if( $loc == 'slkd' )
-		return array('Leukerbad', 'http://www.j2ski.mobi/switzerland/leukerbad_snow-report.html');
-	if( $loc == 'smur' )
-		return array('Mürren', 'http://www.j2ski.mobi/switzerland/murren_snow-report.html');
-	if( $loc == 'spot' )
-		return array('Pontresina', 'http://www.j2ski.mobi/switzerland/pontresina_snow-report.html');
-	if( $loc == 'sslv' )
-		return array('Silvaplana', 'http://www.j2ski.mobi/switzerland/silvaplana_snow-report.html');
-	if( $loc == 'sstm' )
-		return array('St. Moritz', 'http://www.j2ski.mobi/switzerland/st_moritz_snow-report.html');
-	if( $loc == 'szrm' )
-		return array('Zermatt', 'http://www.j2ski.mobi/switzerland/zermatt_snow-report.html');
-	if( $loc == 'smhg' )
-		return array('Meiringen - Hasliberg', 'http://www.j2ski.mobi/switzerland/meiringen_hasliberg_snow-report.html');
-	if( $loc == 'snen' )
-		return array('Nendaz', 'http://www.j2ski.mobi/switzerland/nendaz_snow-report.html');
-	if( $loc == 'svey' )
-		return array('Veysonnaz', 'http://www.j2ski.mobi/switzerland/veysonnaz_snow-report.html');
-	if( $loc == 'scrm' )
-		return array('Crans-Montana', 'http://www.j2ski.mobi/switzerland/crans_montana_snow-report.html');
-	if( $loc == 'sflm' )
-		return array('Flumserberg', 'http://www.j2ski.mobi/switzerland/flumserberg_snow-report.html');
-	if( $loc == 'sgrm' )
-		return array('Grimentz', 'http://www.j2ski.mobi/switzerland/grimentz_snow-report.html');
-	if( $loc == 'slnv' )
-		return array('Lenzerheide - Valbella', 'http://www.j2ski.mobi/switzerland/lenzerheide_valbella_snow-report.html');
-	if( $loc == 'sldb' )
-		return array('Les Diablerets', 'http://www.j2ski.mobi/switzerland/les_diablerets_snow-report.html');
-	if( $loc == 'stlc' )
-		return array('Thyon les Collons', 'http://www.j2ski.mobi/switzerland/thyon_les_collons_snow-report.html');
-	if( $loc == 'sgst' )
-		return array('Gstaad', 'http://www.j2ski.mobi/switzerland/gstaad_snow-report.html');
-	if( $loc == 'sdsr' )
-		return array('Disentis Sedrun', 'http://www.j2ski.mobi/switzerland/disentis_sedrun_snow-report.html');
-	if( $loc == 'sverb' )
-		return array('Verbier', 'http://www.j2ski.mobi/switzerland/verbier_snow-report.html');
-	if( $loc == 'sltz' )
-		return array('La Tzoumaz', 'http://www.j2ski.mobi/switzerland/la_tzoumaz_snow-report.html');
-	if( $loc == 'salt' )
-		return array('Aletsch', 'http://www.j2ski.mobi/switzerland/aletsch_snow-report.html');
-	if( $loc == 'sdav' )
-		return array('Davos', 'http://www.j2ski.mobi/switzerland/davos_snow-report.html');
-	if( $loc == 'smrg' )
-		return array('Morgins', 'http://www.j2ski.mobi/switzerland/morgins_snow-report.html');
-	if( $loc == 'sasa' )
-		return array('Arosa', 'http://www.j2ski.mobi/switzerland/arosa_snow-report.html');
-	if( $loc == 'skls' )
-		return array('Klosters', 'http://www.j2ski.mobi/switzerland/klosters_snow-report.html');
-	if( $loc == 'smin' )
-		return array('Minschuns', 'http://www.j2ski.mobi/switzerland/minschuns_snow-report.html');
-	if( $loc == 'ssam' )
-		return array('Samnaun', 'http://www.j2ski.mobi/switzerland/samnaun_snow-report.html');
-	if( $loc == 'ssed' )
-		return array('Sedrun', 'http://www.j2ski.mobi/switzerland/sedrun_snow-report.html');
-	if( $loc == 'sstl' )
-		return array('St-Luc / Chandolin', 'http://www.j2ski.mobi/switzerland/st_luc_chandolin_snow-report.html');
-	if( $loc == 'sadl' )
-		return array('Adelboden', 'http://www.j2ski.mobi/switzerland/adelboden_snow-report.html');
-	if( $loc == 'sevo' )
-		return array('Evolène', 'http://www.j2ski.mobi/switzerland/evolene_snow-report.html');
-	if( $loc == 'swen' )
-		return array('Wengen', 'http://www.j2ski.mobi/switzerland/wengen_snow-report.html');
-	if( $loc == 'skan' )
-		return array('Kandersteg', 'http://www.j2ski.mobi/switzerland/kandersteg_snow-report.html');
-	if( $loc == 'sgrn' )
-		return array('Grindelwald', 'http://www.j2ski.mobi/switzerland/grindelwald_snow-report.html');
-	if( $loc == 'svgn' )
-		return array('Villars - Gryon', 'http://www.j2ski.mobi/switzerland/villars_gryon_snow-report.html');
-	if( $loc == 'sbwd' )
-		return array('Braunwald', 'http://www.j2ski.mobi/switzerland/braunwald_snow-report.html');
+	$resorts['seng'] = resort_props('Engelberg',             array(), 'http://www.j2ski.mobi/switzerland/engelberg_snow-report.html');
+	$resorts['sand'] = resort_props('Andermatt',             array(), 'http://www.j2ski.mobi/switzerland/andermatt_snow-report.html');
+	$resorts['sanz'] = resort_props('Anzère',                array(), 'http://www.j2ski.mobi/switzerland/anzere_snow-report.html');
+	$resorts['slax'] = resort_props('Laax',                  array(), 'http://www.j2ski.mobi/switzerland/laax_snow-report.html');
+	$resorts['sflf'] = resort_props('Flims-Laax-Falera',     array(), 'http://www.j2ski.mobi/switzerland/flims_laax_falera_snow-report.html');
+	$resorts['sssf'] = resort_props('Saas-Fee',              array(), 'http://www.j2ski.mobi/switzerland/saas_fee_snow-report.html');
+	$resorts['slkd'] = resort_props('Leukerbad',             array(), 'http://www.j2ski.mobi/switzerland/leukerbad_snow-report.html');
+	$resorts['smur'] = resort_props('Mürren',                array(), 'http://www.j2ski.mobi/switzerland/murren_snow-report.html');
+	$resorts['spot'] = resort_props('Pontresina',            array(), 'http://www.j2ski.mobi/switzerland/pontresina_snow-report.html');
+	$resorts['sslv'] = resort_props('Silvaplana',            array(), 'http://www.j2ski.mobi/switzerland/silvaplana_snow-report.html');
+	$resorts['sstm'] = resort_props('St. Moritz',            array(), 'http://www.j2ski.mobi/switzerland/st_moritz_snow-report.html');
+	$resorts['szrm'] = resort_props('Zermatt',               array(), 'http://www.j2ski.mobi/switzerland/zermatt_snow-report.html');
+	$resorts['smhg'] = resort_props('Meiringen - Hasliberg', array(), 'http://www.j2ski.mobi/switzerland/meiringen_hasliberg_snow-report.html');
+	$resorts['snen'] = resort_props('Nendaz',                array(), 'http://www.j2ski.mobi/switzerland/nendaz_snow-report.html');
+	$resorts['svey'] = resort_props('Veysonnaz',             array(), 'http://www.j2ski.mobi/switzerland/veysonnaz_snow-report.html');
+	$resorts['scrm'] = resort_props('Crans-Montana',         array(), 'http://www.j2ski.mobi/switzerland/crans_montana_snow-report.html');
+	$resorts['sflm'] = resort_props('Flumserberg',           array(), 'http://www.j2ski.mobi/switzerland/flumserberg_snow-report.html');
+	$resorts['sgrm'] = resort_props('Grimentz',              array(), 'http://www.j2ski.mobi/switzerland/grimentz_snow-report.html');
+	$resorts['slnv'] = resort_props('Lenzerheide - Valbella',array(), 'http://www.j2ski.mobi/switzerland/lenzerheide_valbella_snow-report.html');
+	$resorts['sldb'] = resort_props('Les Diablerets',        array(), 'http://www.j2ski.mobi/switzerland/les_diablerets_snow-report.html');
+	$resorts['stlc'] = resort_props('Thyon les Collons',     array(), 'http://www.j2ski.mobi/switzerland/thyon_les_collons_snow-report.html');
+	$resorts['sgst'] = resort_props('Gstaad',                array(), 'http://www.j2ski.mobi/switzerland/gstaad_snow-report.html');
+	$resorts['sdsr'] = resort_props('Disentis Sedrun',       array(), 'http://www.j2ski.mobi/switzerland/disentis_sedrun_snow-report.html');
+	$resorts['sverb'] = resort_props('Verbier',              array(), 'http://www.j2ski.mobi/switzerland/verbier_snow-report.html');
+	$resorts['sltz'] = resort_props('La Tzoumaz',            array(), 'http://www.j2ski.mobi/switzerland/la_tzoumaz_snow-report.html');
+	$resorts['salt'] = resort_props('Aletsch',               array(), 'http://www.j2ski.mobi/switzerland/aletsch_snow-report.html');
+	$resorts['sdav'] = resort_props('Davos',                 array(), 'http://www.j2ski.mobi/switzerland/davos_snow-report.html');
+	$resorts['smrg'] = resort_props('Morgins',               array(), 'http://www.j2ski.mobi/switzerland/morgins_snow-report.html');
+	$resorts['sasa'] = resort_props('Arosa',                 array(), 'http://www.j2ski.mobi/switzerland/arosa_snow-report.html');
+	$resorts['skls'] = resort_props('Klosters',              array(), 'http://www.j2ski.mobi/switzerland/klosters_snow-report.html');
+	$resorts['smin'] = resort_props('Minschuns',             array(), 'http://www.j2ski.mobi/switzerland/minschuns_snow-report.html');
+	$resorts['ssam'] = resort_props('Samnaun',               array(), 'http://www.j2ski.mobi/switzerland/samnaun_snow-report.html');
+	$resorts['ssed'] = resort_props('Sedrun',                array(), 'http://www.j2ski.mobi/switzerland/sedrun_snow-report.html');
+	$resorts['sstl'] = resort_props('St-Luc / Chandolin',    array(), 'http://www.j2ski.mobi/switzerland/st_luc_chandolin_snow-report.html');
+	$resorts['sadl'] = resort_props('Adelboden',             array(), 'http://www.j2ski.mobi/switzerland/adelboden_snow-report.html');
+	$resorts['sevo'] = resort_props('Evolène',               array(), 'http://www.j2ski.mobi/switzerland/evolene_snow-report.html');
+	$resorts['swen'] = resort_props('Wengen',                array(), 'http://www.j2ski.mobi/switzerland/wengen_snow-report.html');
+	$resorts['skan'] = resort_props('Kandersteg',            array(), 'http://www.j2ski.mobi/switzerland/kandersteg_snow-report.html');
+	$resorts['sgrn'] = resort_props('Grindelwald',           array(), 'http://www.j2ski.mobi/switzerland/grindelwald_snow-report.html');
+	$resorts['svgn'] = resort_props('Villars - Gryon',       array(), 'http://www.j2ski.mobi/switzerland/villars_gryon_snow-report.html');
+	$resorts['sbwd'] = resort_props('Braunwald',             array(), 'http://www.j2ski.mobi/switzerland/braunwald_snow-report.html');
 
 //france
-	if( $loc == 'fchm')
-		return array('Chamonix', 'http://www.j2ski.mobi/france/chamonix_snow-report.html');
+	$resorts['fchm'] = resort_props('Chamonix',              array(), 'http://www.j2ski.mobi/france/chamonix_snow-report.html');
 
-	return null;
+	return $resorts;
 }
+
 /*
 Missing Swiss resorts:
 Champéry, Leysin, Zinal, Grächen, Savognin

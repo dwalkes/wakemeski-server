@@ -40,6 +40,7 @@ function show_regions()
 {
 	print "Colorado\n";
 	print "New Mexico\n";
+	print "Nevada\n";
 	print "Montana\n";
 	print "Oregon\n";
 	print "Utah\n";
@@ -127,6 +128,10 @@ function show_locations($region)
 		print "Beaver Creek = $URL_BASE/co_report2.php?location=BC\n";
 		print "Keystone = $URL_BASE/co_report2.php?location=KS\n";
 		print "Breckenridge = $URL_BASE/co_report2.php?location=BK\n";
+	}
+	else if ( $region = "Nevada" )
+	{
+		print "Heavenly = $URL_BASE/co_report2.php?location=HV\n";
 	}
 	else if( $region == "Montana" )
 	{

@@ -26,7 +26,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('weather.inc');
 require_once('common.inc');
 
 header( "Content-Type: text/plain" );
@@ -122,8 +121,6 @@ function cache_summary($location, $report_date, $report, $report2)
 			$summary['snow.daily'] .= " Yesterday($val)";
 		}
 	}
-
-	$fp = fopen("nwac_$location.txt", 'w');
 
 	$summary['location'] = $location;
 	$summary['date'] = $report_date;

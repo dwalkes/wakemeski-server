@@ -26,19 +26,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('weather.inc');
 require_once('common.inc');
 
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
-	//first validate the location:
-	if(!get_readable_location($location))
-	{
-		print "err.msg=invalid location: $location\n";
-		exit(1);
-	}
+	$resorts = build_resorts_table();
+
+	resort_assert_location($resorts, $location);
 
 	$cache_file = 'co_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
@@ -52,18 +48,16 @@ header( "Content-Type: text/plain" );
 
 function write_report($loc)
 {
-	global $cache_file;
+	global $resorts, $cache_file;
 
-	$readable = get_readable_location($loc);
+	$readable = resort_get_readable_location($resorts, $loc);
 	$report = get_location_report($readable);
 	if( $report )
 	{
 		$props = get_report_props($report);
-
 		$props['location'] = $loc;
 
-		list($lat, $lon) = get_lat_lon($loc);
-		Weather::set_props($lat, $lon, &$props);
+		resort_set_weather($resorts, $loc, &$props);
 
 		cache_create($cache_file, $props);
 	}
@@ -138,61 +132,32 @@ function get_report_xml()
 	return dom_import_simplexml($sxe);
 }
 
-/**
- * Turns a 2 digit code like AB into Arapohoe Basin
- */
-function get_readable_location($loc)
+function build_resorts_table()
 {
-	if( $loc == 'AB') return 'Arapahoe Basin';
-	if( $loc =='AH' ) return 'Aspen Highlands';
-	if( $loc =='AM' ) return 'Aspen Mountain';
-	if( $loc =='BM' ) return 'Buttermilk';
-	if( $loc =='CM' ) return 'Copper Mountain';
-	if( $loc =='CB' ) return 'Crested Butte';
-	if( $loc =='EM' ) return 'Echo Mountain';
-	if( $loc =='EL' ) return 'Eldora';
-	if( $loc =='HW' ) return 'Howelsen';
-	if( $loc =='LV' ) return 'Loveland';
-	if( $loc =='MM' ) return 'Monarch Mountain';
-	if( $loc =='PH' ) return 'Powderhorn';
-	if( $loc =='PG' ) return 'Purgatory';
-	if( $loc == 'SM') return 'Silverton Mountain';
-	if( $loc == 'SC') return 'Ski Cooper';
-	if( $loc == 'SN') return 'Snowmass';
-	if( $loc == 'SV') return 'Sol Vista Basin';
-	if( $loc == 'ST') return 'Steamboat';
-	if( $loc == 'SL') return 'Sunlight';
-	if( $loc == 'TD') return 'Telluride';
-	if( $loc == 'WP') return 'Winter Park';
-	if( $loc == 'WC') return 'Wolf Creek';
+	$resorts['AB'] = resort_props('Arapahoe Basin',     array(39.6448,   -105.871));
+	$resorts['AH'] = resort_props('Aspen Highlands',    array(39.181711, -106.856121));
+	$resorts['AM'] = resort_props('Aspen Mountain',     array(39.18428,  -106.821903));
+	$resorts['BM'] = resort_props('Buttermilk',         array(39.205167, -106.859294));
+	$resorts['CM'] = resort_props('Copper Mountain',    array(39.4944,   -106.138732));
+	$resorts['CB'] = resort_props('Crested Butte',      array(38.899932, -106.964249));
+	$resorts['EM'] = resort_props('Echo Mountain',      array(37.591389, -107.571726));
+	$resorts['EL'] = resort_props('Eldora',             array(39.937341, -105.5853));
+	$resorts['HW'] = resort_props('Howelsen',           array(40.480533, -106.840605));
+	$resorts['LV'] = resort_props('Loveland',           array(39.680191, -105.898114));
+	$resorts['MM'] = resort_props('Monarch Mountain',   array(38.512285, -106.332957));
+	$resorts['PH'] = resort_props('Powderhorn',         array(39.068912, -108.15068));
+	$resorts['PG'] = resort_props('Purgatory',          array(37.629261, -107.815288));
+	$resorts['SM'] = resort_props('Silverton Mountain', array(37.791067, -107.666171));
+	$resorts['SC'] = resort_props('Ski Cooper',         array(39.358897, -106.299256));
+	$resorts['SN'] = resort_props('Snowmass',           array(39.162132, -106.787847));
+	$resorts['SV'] = resort_props('Sol Vista Basin',    array(40.04784,  -105.898969));
+	$resorts['ST'] = resort_props('Steamboat',          array(40.458905, -106.802092));
+	$resorts['SL'] = resort_props('Sunlight',           array(39.398121, -107.339174));
+	$resorts['TD'] = resort_props('Telluride',          array(37.9392,   -107.8163));
+	$resorts['WP'] = resort_props('Winter Park',        array(39.886791, -105.764279));
+	$resorts['WC'] = resort_props('Wolf Creek',         array(37.472654, -106.793116));
 
-	//hope this doesn't happen, but be graceful at the least
-	return $loc;
+	return $resorts;
 }
 
-function get_lat_lon($loc)
-{
-	if( $loc == 'AB') return array(39.6448,   -105.871);
-	if( $loc =='AH' ) return array(39.181711, -106.856121);
-	if( $loc =='AM' ) return array(39.18428,  -106.821903);
-	if( $loc =='BM' ) return array(39.205167, -106.859294);
-	if( $loc =='CM' ) return array(39.4944,   -106.138732);
-	if( $loc =='CB' ) return array(38.899932, -106.964249);
-	if( $loc =='EM' ) return array(37.591389, -107.571726);
-	if( $loc =='EL' ) return array(39.937341, -105.5853);
-	if( $loc =='HW' ) return array(40.480533, -106.840605);
-	if( $loc =='LV' ) return array(39.680191, -105.898114);
-	if( $loc =='MM' ) return array(38.512285, -106.332957);
-	if( $loc =='PH' ) return array(39.068912, -108.15068);
-	if( $loc =='PG' ) return array(37.629261, -107.815288);
-	if( $loc == 'SM') return array(37.791067, -107.666171);
-	if( $loc == 'SC') return array(39.358897, -106.299256);
-	if( $loc == 'SN') return array(39.162132, -106.787847);
-	if( $loc == 'SV') return array(40.04784,  -105.898969);
-	if( $loc == 'ST') return array(40.458905, -106.802092);
-	if( $loc == 'SL') return array(39.398121, -107.339174);
-	if( $loc == 'TD') return array(37.9392,   -107.8163);
-	if( $loc == 'WP') return array(39.886791, -105.764279);
-	if( $loc == 'WC') return array(37.472654, -106.793116);
-}
 ?>

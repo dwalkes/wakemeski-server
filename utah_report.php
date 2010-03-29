@@ -26,38 +26,31 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('weather.inc');
 require_once('common.inc');
 
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
-	//first validate the location:
-	if(!getReadableLocation($location))
-	{
-		print "err.msg=invalid location: $location\n";
-		exit(1);
-	}
+	$resorts = build_resorts_table();
+
+	resort_assert_location($resorts, $location);
 
 	$cache_file = 'ut_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
 	{
-		write_report($location);
+		write_report($resorts, $location, $cache_file);
 	}
 
 	cache_dump($cache_file, $found_cache);
 
-function write_report($loc)
+function write_report($resorts, $loc, $cache_file)
 {
-	$report = get_report($loc);
+	$report = get_report($resorts, $loc);
 	if( $report )
 	{
-		global $cache_file;
-
-		list($lat, $lon) = get_lat_lon($loc);
-		Weather::set_props($lat, $lon, &$report);
+		resort_set_weather($resorts, $loc, &$report);
 
 		cache_create($cache_file, $report);
 	}
@@ -97,13 +90,13 @@ function get_report_contents($url)
 	return substr($contents, $idx1, $idx2-$idx1);
 }
 
-function get_report($loc)
+function get_report($resorts, $loc)
 {
 	$url = get_url($loc);
 	$contents = get_report_contents($url);
 
 	$data = array();
-	$data['location'] = getReadableLocation($loc);
+	$data['location'] = resort_get_readable_location($resorts, $loc);
 
 	$data['location.info'] = $url;
 
@@ -130,73 +123,23 @@ function get_report($loc)
 	return $data;
 }
 
-
-/**
- * Turns a 3 digit code like ATA into Alta
- */
-function getReadableLocation($loc)
+function build_resorts_table()
 {
-	if( $loc == 'ATA') return 'Alta';
-	if( $loc == 'BVR') return 'Beaver Mountain';
-	if( $loc == 'BHR') return 'Brian Head';
-	if( $loc == 'BRT') return 'Brighton';
-	if( $loc == 'CNY') return 'The Canyons';
-	if( $loc == 'DVR') return 'Deer Valley';
-	if( $loc == 'PCM') return 'Park City';
-	if( $loc == 'POW') return 'Powder Mountain';
-	if( $loc == 'SBN') return 'Snowbasin';
-	if( $loc == 'SBD') return 'Snowbird';
-	if( $loc == 'SOL') return 'Solitude';
-	if( $loc == 'SUN') return 'Sundance';
-	if( $loc == 'WLF') return 'Wolf Creek';
-}
+	$resorts['ATA'] = resort_props('Alta',            array(40.57972, -111.6375));
+	$resorts['BVR'] = resort_props('Beaver Mountain', array(41.96833, -111.54083));
+	$resorts['BHR'] = resort_props('Brian Head',      array(37.69194, -112.83722));
+	$resorts['BRT'] = resort_props('Brighton',        array(40.6,     -111.58278));
+	$resorts['CNY'] = resort_props('The Canyons',     array(40.68525, -111.556375));
+	$resorts['DVR'] = resort_props('Deer Valley',     array(40.63139, -111.47861));
+	$resorts['PCM'] = resort_props('Park City',       array(40.64361, -111.50417));
+	$resorts['POW'] = resort_props('Powder Mountain', array(41.37778, -111.77111));
+	$resorts['SBN'] = resort_props('Snowbasin',       array(41.21194, -111.85111));
+	$resorts['SBD'] = resort_props('Snowbird',        array(40.57805, -111.666755));
+	$resorts['SOL'] = resort_props('Solitude',        array(40.62556, -111.59444));
+	$resorts['SUN'] = resort_props('Sundance',        array(40.38583, -111.58083));
+	$resorts['WLF'] = resort_props('Wolf Creek',      array(40.47667, -111.02361));
 
-//turns something like "Alta" into ATA
-function getLocation($resort)
-{
-	if( strstr($resort, "Alta") ) return "ATA";
-	if( strstr($resort, "Beaver Mountain") ) return "BVR";
-	if( strstr($resort, "Brian Head") ) return "BHR";
-	if( strstr($resort, "Brighton") ) return "BRT";
-	if( strstr($resort, "The Canyons") ) return "CNY";
-	if( strstr($resort, "Deer Valley") ) return "DVR";
-	if( strstr($resort, "Park City") ) return "PCM";
-	if( strstr($resort, "Powder Mountain") ) return "POW";
-	if( strstr($resort, "Snowbasin") ) return "SBN";
-	if( strstr($resort, "Snowbird") ) return "SBD";
-	if( strstr($resort, "Solitude") ) return "SOL";
-	if( strstr($resort, "Sundance") ) return "SUN";
-	if( strstr($resort, "Wolf Creek") ) return "WLF";
-}
-
-function get_lat_lon($loc)
-{
-	if( $loc == 'ATA')
-		return array(40.57972, -111.6375);
-	if( $loc == 'BVR')
-		return array(41.96833, -111.54083);
-	if( $loc == 'BHR')
-		return array(37.69194, -112.83722);
-	if( $loc == 'BRT')
-		return array(40.6, -111.58278 );
-	if( $loc == 'CNY')
-		return array(40.685257, -111.556375);
-	if( $loc == 'DVR')
-		return array(40.63139, -111.47861 );
-	if( $loc == 'PCM')
-		return array(40.64361, -111.50417 );
-	if( $loc == 'POW')
-		return array(41.37778, -111.77111);
-	if( $loc == 'SBN')
-		return array(41.21194, -111.85111);
-	if( $loc == 'SBD')
-		return array(40.578052, -111.666755 );
-	if( $loc == 'SOL')
-		return array(40.62556, -111.59444 );
-	if( $loc == 'SUN')
-		return array(40.38583, -111.58083 );
-	if( $loc == 'WLF')
-		return array(40.47667, -111.02361 );
+	return $resorts;
 }
 
 ?>

@@ -26,42 +26,35 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('weather.inc');
 require_once('common.inc');
 
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
-	//first validate the location:
-	if(!get_readable_location($location))
-	{
-		print "err.msg=invalid location: $location\n";
-		exit(1);
-	}
+	$resorts = build_resorts_table();
+
+	resort_assert_location($resorts, $location);
 
 	$cache_file = 'co2_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
 	{
-		write_report($location);
+		write_report($resorts, $location, $cache_file);
 	}
 
 	cache_dump($cache_file, $found_cache);
 
 
-function write_report($loc)
+function write_report($resorts, $loc, $cache_file)
 {
-	global $cache_file;
-
 	$reports = get_reports();
 	$props = $reports[$loc];
 	if( $props )
 	{
-		$props['location.info'] = get_details_url($loc);
+		$props['location.info'] = resort_get_info_url($resorts, $loc);
 
-		list($lat, $lon) = get_lat_lon($loc);
-		Weather::set_props($lat, $lon, &$props);
+		resort_set_weather($resorts, $loc, &$props);
 
 		cache_create($cache_file, $props);
 	}
@@ -73,6 +66,7 @@ function write_report($loc)
 
 function get_reports()
 {
+	global $resorts;
 	$contents = file_get_contents("http://snow.com/rssfeeds/snowreports.aspx");
 
 	//each location is in an <item> tag
@@ -84,7 +78,7 @@ function get_reports()
 	for($i = 0; $i < count($locations); $i++)
 	{
 		$report = get_report($locations[$i]);
-		$loc = get_location($report['location']);
+		$loc = resort_get_location($resorts, $report['location']);;
 		$reports[$loc] = $report;
 	}
 
@@ -127,59 +121,15 @@ function get_report($body)
 	return $data;
 }
 
-//performs the reverse of get_readable_location
-function get_location($loc)
+function build_resorts_table()
 {
-	if( $loc == 'Vail')
-		return 'VA';
-	if( $loc == 'Beaver Creek')
-		return 'BC';
-	if( $loc == 'Keystone')
-		return 'KS';
-	if( $loc == 'Breckenridge')
-		return 'BK';
+	$resorts['VA'] = resort_props('Vail',         array(39.639423,-106.371),   'http://www.vail.com/');
+	$resorts['BC'] = resort_props('Beaver Creek', array(39.60253, -106.5171),  'http://www.beavercreek.com');
+	$resorts['KS'] = resort_props('Keystone',     array(39.60402, -105.95433), 'http://www.keystoneresort.com');
+	$resorts['BK'] = resort_props('Breckenridge', array(39.474249,-106.04881), 'http://www.breckenridge.com');
+	$resorts['HV'] = resort_props('Heavenly',     array(38.934787,-119.940384),'http://www.skiheavenly.com');
 
-	//hope this doesn't happen, but be graceful at the least
-	return $loc;
-}
-
-/**
- * Turns a 3 digit code like ATA into Alta
- */
-function get_readable_location($loc)
-{
-	if( $loc == 'VA')
-		return 'Vail';
-	if( $loc == 'BC')
-		return 'Beaver Creek';
-	if( $loc == 'KS')
-		return 'Keystone';
-	if( $loc == 'BK')
-		return 'Breckenridge';
-}
-
-function get_details_url($loc)
-{
-	if( $loc == 'VA')
-		return 'http://www.vail.com/';
-	if( $loc == 'BC')
-		return 'http://www.beavercreek.com';
-	if( $loc == 'KS')
-		return 'http://www.keystoneresort.com';
-	if( $loc == 'BK')
-		return 'http://www.breckenridge.com';
-}
-
-function get_lat_lon($loc)
-{
-	if( $loc == 'VA')
-		return array(39.639423, -106.371);
-	if( $loc == 'BC')
-		return array(39.60253, -106.51711);
-	if( $loc == 'KS')
-		return array(39.60402, -105.954336);
-	if( $loc == 'BK')
-		return array(39.474249, -106.048871 );
+	return $resorts;
 }
 
 ?>

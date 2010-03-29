@@ -33,34 +33,28 @@ header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
-	//first validate the location:
-	if(!get_location_name($location))
-	{
-		print "err.msg=invalid location: $location\n";
-		exit(1);
-	}
+	$resorts = build_resorts_table();
+
+	resort_assert_location($resorts, $location);
 
 	$cache_file = 'nm_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
 	{
-		write_report($location);
+		write_report($resorts, $location, $cache_file);
 	}
 
 	cache_dump($cache_file, $found_cache);
 
-function write_report($loc)
+function write_report($resorts, $loc, $cache_file)
 {
-	$reports = get_reports();
+	$reports = get_reports($resorts);
 	$report = $reports[$loc];
 	if( $report )
 	{
-		global $cache_file;
+		$props['location.info'] = resort_get_info_url($resorts, $loc);
 
-		$report['location.info'] = get_details_url($loc);
-
-		list($lat, $lon) = get_lat_lon($loc);
-		Weather::set_props($lat, $lon, &$report);
+		resort_set_weather($resorts, $loc, &$report);
 
 		cache_create($cache_file, $report);
 	}
@@ -70,7 +64,7 @@ function write_report($loc)
 	}
 }
 
-function get_reports()
+function get_reports($resorts)
 {
 	$contents = file_get_contents("http://skinewmexico.com/snow_reports/feed.rss");
 
@@ -83,7 +77,7 @@ function get_reports()
 	for($i = 0; $i < count($locations); $i++)
 	{
 		$report = get_report($locations[$i]);
-		$loc = get_location($report['location']);
+		$loc = resort_get_location($resorts, $report['location']);
 		$reports[$loc] = $report;
 	}
 
@@ -132,86 +126,20 @@ function get_report($body)
 	return $data;
 }
 
-function get_details_url($loc)
+function build_resorts_table()
 {
-	if( $loc == 'AF')
-		return 'http://www.angelfireresort.com/winter/mountain-snow-report.php';
-	if( $loc == 'EF')
-		return 'http://www.enchantedforestxc.com/';
-	if( $loc == 'PM')
-		return 'http://www.skipajarito.com/conditions.php';
-	if( $loc == 'RR')
-		return 'http://redriverskiarea.com/page.php?pname=mountain/snow';
-	if( $loc == 'SP')
-		return 'http://www.sandiapeak.com/index.php?page=snow-report';
-	if( $loc == 'SI')
-		return 'http://www.sipapunm.com/index.php?option=com_snowreport&view=helloworld&Itemid=73';
-	if( $loc == 'SA')
-		return 'http://www.skiapache.com/';
-	if( $loc == 'SF')
-		return 'http://skisantafe.com/index.php?page=snow-report';
-	if( $loc == 'TS')
-		return 'http://www.skitaos.org/snow_reports/index';
-	if( $loc == 'VC')
-		return 'http://www.vallescaldera.gov/comevisit/skisnow/';
-}
+	$resorts['AF'] = resort_props('Angel Fire',        array(36.3903, -105.2875),   'http://www.angelfireresort.com/winter/mountain-snow-report.php');
+	$resorts['EF'] = resort_props('Enchanted Forest',  array(36.7063, -105.4053),   'http://www.enchantedforestxc.com/');
+	$resorts['PM'] = resort_props('Pajarito Mountain', array(35.89519,-106.391785), 'http://www.skipajarito.com/conditions.php');
+	$resorts['RR'] = resort_props('Red River',         array(36.70859,-105.409924), 'http://redriverskiarea.com/page.php?pname=mountain/snow');
+	$resorts['SP'] = resort_props('Sandia Peak',       array(35.20783,-106.41354),  'http://www.sandiapeak.com/index.php?page=snow-report');
+	$resorts['SI'] = resort_props('Sipapu',            array(36.15359,-105.54824),  'http://www.sipapunm.com/index.php?option=com_snowreport&view=helloworld&Itemid=73');
+	$resorts['SA'] = resort_props('Ski Apache',        array(33.39745,-105.789198), 'http://www.skiapache.com/');
+	$resorts['SF'] = resort_props('Ski Santa Fe',      array(35.79679,-105.80166),  'http://skisantafe.com/index.php?page=snow-report');
+	$resorts['TS'] = resort_props('Taos',              array(36.35,   -105.27),     'http://www.skitaos.org/snow_reports/index');
+	$resorts['VC'] = resort_props('Valles Caldera',    array(35.9,    -106.55),     'http://www.vallescaldera.gov/comevisit/skisnow/');
 
-function get_lat_lon($loc)
-{
-	if( $loc == 'AF')
-		return array(36.3903, -105.2875);
-	if( $loc == 'EF')
-		return array(36.7063, -105.4053);
-	if( $loc == 'PM')
-		return array(35.895129, -106.391785);
-	if( $loc == 'RR')
-		return array(36.70859, -105.409924 );
-	if( $loc == 'SP')
-		return array(35.207831, -106.41354 );
-	if( $loc == 'SI')
-		return array(36.153595, -105.54824);
-	if( $loc == 'SA')
-		return array(33.397455, -105.789198);
-	if( $loc == 'SF')
-		return array(35.796793, -105.80166);
-	if( $loc == 'TS')
-		return array(36.35, -105.27);
-	if( $loc == 'VC')
-		return array(35.9, -106.55);
-}
-
-//these values are tied to the values defined in location_finder.php
-function get_location_name($code)
-{
-	if( $code == 'AF' )	return 'Angel Fire';
-	if( $code == 'EF' )	return "Enchanted Forest";
-	if( $code == 'PM' )	return "Pajarito Mountain";
-	if( $code == 'RR' )	return "Red River";
-	if( $code == 'SP' )	return "Sandia Peak";
-	if( $code == 'SI' )	return "Sipapu";
-	if( $code == 'SA' )	return "Ski Apache";
-	if( $code == 'SF' )	return "Ski Santa Fe";
-	if( $code == 'TS' )	return "Taos";
-	if( $code == 'VC' )	return "Valles Caldera Nordic";
-
-	return '';
-}
-
-//these values are tied to the values defined in location_finder.php
-function get_location($name)
-{
-	if( strstr($name, "Angel Fire") ) return "AF";
-	if( strstr($name, "Enchanted Forest") ) return "EF";
-	if( strstr($name, "Pajarito Mountain") ) return "PM";
-	if( strstr($name, "Red River") ) return "RR";
-	if( strstr($name, "Sandia Peak") ) return "SP";
-	if( strstr($name, "Sipapu") ) return "SI";
-	if( strstr($name, "Ski Apache") ) return "SA";
-	if( strstr($name, "Ski Santa Fe") ) return "SF";
-	if( strstr($name, "Taos") ) return "TS";
-	if( strstr($name, "Valles Caldera") ) return "VC";
-
-	return '';
+	return $resorts;
 }
 
 ?>

@@ -26,6 +26,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+require_once('weather.inc');
+
 /**
  * Returns true if the given cache file is available
  * @param - age default of 7200=(2 hours in seconds)
@@ -87,6 +89,63 @@ function cache_dump($file, $found)
 	{
 		print "err.msg=No ski report data found: $file\n";
 	}
+}
+
+/**
+ * Creates a hash map with standard property names needed for resorts
+ * @param readable - the readable name of the location
+ * @param lat_lon - an array(0=lat, 1=lon)
+ * @param info - the "location.info" property
+ */
+function resort_props($readable, $lat_lon, $info='')
+{
+	return array('readable'=>$readable, 'lat_lon'=>$lat_lon, 'info'=>$info);
+}
+
+/**
+ * Ensures the given set of report props includes the given location
+ */
+function resort_assert_location($resort_props, $loc)
+{
+	if( ! array_key_exists($loc, $resort_props) )
+	{
+		print "err.msg=invalid location: $loc\n";
+		exit(1);
+	}
+}
+
+function resort_get_readable_location($resorts, $loc)
+{
+	return $resorts[$loc]['readable'];
+}
+
+/**
+ * performs the reverse of resort_get_readable_location. It actually checks
+ * to see if the readable location is *anywhere* in $readable_location
+ */
+function resort_get_location($resorts, $readable_location)
+{
+	$keys = array_keys($resorts);
+	for($i = 0; $i < count($keys); $i++)
+	{
+		$key = $keys[$i];
+		if( strstr($readable_location, $resorts[$key]['readable']) )
+			return $key;
+	}
+
+	print "err.msg=invalid readable location: $readable_location\n";
+	exit(1);
+}
+
+function resort_get_info_url($resorts, $loc)
+{
+	return $resorts[$loc]['info'];
+}
+
+function resort_set_weather($resorts, $loc, $props)
+{
+	list($lat, $lon) = $resorts[$loc]['lat_lon'];
+	Weather::set_props($lat, $lon, &$props);
 }
 
 ?>
