@@ -129,7 +129,7 @@ function show_locations($region)
 		print "Keystone = $URL_BASE/co_report2.php?location=KS\n";
 		print "Breckenridge = $URL_BASE/co_report2.php?location=BK\n";
 	}
-	else if ( $region = "Nevada" )
+	else if ( $region == "Nevada" )
 	{
 		print "Heavenly = $URL_BASE/co_report2.php?location=HV\n";
 	}
