@@ -51,12 +51,18 @@ function cache_available($file, $age=7200)
 /**
  * Creates the cache file with the report information
  */
-function cache_create($file, $report)
+function cache_create($resort, $file, $report)
 {
 	$fp = fopen($file, 'w');
 
 	if( $report )
 	{
+		$report['location'] = $resort->name;
+		$report['location.info'] = $resort->info;
+
+		if( !isset($report['weather.url']) )
+			Weather::set_props($resort->lat, $resort->lon, &$report);
+
 		$keys = array_keys($report);
 		for($i = 0; $i < count($keys); $i++)
 		{
@@ -91,61 +97,33 @@ function cache_dump($file, $found)
 	}
 }
 
-/**
- * Creates a hash map with standard property names needed for resorts
- * @param readable - the readable name of the location
- * @param lat_lon - an array(0=lat, 1=lon)
- * @param info - the "location.info" property
- */
-function resort_props($readable, $lat_lon, $info='')
+function create_loc($name, $url_base, $code, $lat=0, $lon=0, $info_url='',
+			$data='')
 {
-	return array('readable'=>$readable, 'lat_lon'=>$lat_lon, 'info'=>$info);
+	return (object)array('name'=>$name, 'url_base'=>$url_base, 'code'=>$code,
+				'info'=>$info_url, 'lat'=>$lat, 'lon'=>$lon,
+				'data'=>$data);
+}
+
+function create_region($name, $locations)
+{
+	return (object)array('name'=>$name, 'locations'=>$locations);
 }
 
 /**
- * Ensures the given set of report props includes the given location
+ * Returns the resort information for the given location code or exits the
+ * program with an error
  */
-function resort_assert_location($resort_props, $loc)
+function resort_get_location($resorts, $code)
 {
-	if( ! array_key_exists($loc, $resort_props) )
+	foreach( $resorts as $resort )
 	{
-		print "err.msg=invalid location: $loc\n";
-		exit(1);
-	}
-}
-
-function resort_get_readable_location($resorts, $loc)
-{
-	return $resorts[$loc]['readable'];
-}
-
-/**
- * performs the reverse of resort_get_readable_location. It actually checks
- * to see if the readable location is *anywhere* in $readable_location
- */
-function resort_get_location($resorts, $readable_location)
-{
-	$keys = array_keys($resorts);
-	for($i = 0; $i < count($keys); $i++)
-	{
-		$key = $keys[$i];
-		if( strstr($readable_location, $resorts[$key]['readable']) )
-			return $key;
+		if( $resort->code == $code )
+			return $resort;
 	}
 
-	print "err.msg=invalid readable location: $readable_location\n";
+	print "err.msg=invalid location: $code\n";
 	exit(1);
-}
-
-function resort_get_info_url($resorts, $loc)
-{
-	return $resorts[$loc]['info'];
-}
-
-function resort_set_weather($resorts, $loc, $props)
-{
-	list($lat, $lon) = $resorts[$loc]['lat_lon'];
-	Weather::set_props($lat, $lon, &$props);
 }
 
 ?>

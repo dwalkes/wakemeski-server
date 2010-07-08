@@ -26,45 +26,32 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('common.inc');
+require_once('co.inc');
 
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
-	$resorts = build_resorts_table();
-
-	resort_assert_location($resorts, $location);
+	$resorts = resorts_co_get();
+	$resort = resort_get_location($resorts, $location);
 
 	$cache_file = 'co2_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
 	{
-		write_report($resorts, $location, $cache_file);
+		write_report($resort, $cache_file);
 	}
 
 	cache_dump($cache_file, $found_cache);
 
-
-function write_report($resorts, $loc, $cache_file)
+function write_report($resort, $cache_file)
 {
-	$reports = get_reports();
-	$props = $reports[$loc];
-	if( $props )
-	{
-		$props['location.info'] = resort_get_info_url($resorts, $loc);
-
-		resort_set_weather($resorts, $loc, &$props);
-
-		cache_create($cache_file, $props);
-	}
-	else
-	{
-		print("err.msg=No ski report data found\n");
-	}
+	$report = get_report($resort);
+	if( $report )
+		cache_create($resort, $cache_file, $report);
 }
 
-function get_reports()
+function get_report($resort)
 {
 	global $resorts;
 	$contents = file_get_contents("http://snow.com/rssfeeds/snowreports.aspx");
@@ -74,18 +61,17 @@ function get_reports()
 	//the first item is header junk we can ignore
 	array_shift($locations);
 
-	$reports = array();
 	for($i = 0; $i < count($locations); $i++)
 	{
-		$report = get_report($locations[$i]);
-		$loc = resort_get_location($resorts, $report['location']);;
-		$reports[$loc] = $report;
+		$report = get_report_props($locations[$i]);
+		if( $report['location'] == $resort->name )
+			return $report;
 	}
 
-	return $reports;
+	return false;
 }
 
-function get_report($body)
+function get_report_props($body)
 {
 	$data = array();
 	preg_match_all("/<title>(.*) Resort Snow Report - (.*) - (.*)<\/title/", $body, $matches, PREG_OFFSET_CAPTURE);

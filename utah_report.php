@@ -26,53 +26,29 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('common.inc');
+require_once('ut.inc');
 
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
-	$resorts = build_resorts_table();
-
-	resort_assert_location($resorts, $location);
+	$resorts = resorts_ut_get();
+	$resort = resort_get_location($resorts, $location);
 
 	$cache_file = 'ut_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
 	{
-		write_report($resorts, $location, $cache_file);
+		write_report($resort, $cache_file);
 	}
 
 	cache_dump($cache_file, $found_cache);
 
-function write_report($resorts, $loc, $cache_file)
+function write_report($resort, $cache_file)
 {
-	$report = get_report($resorts, $loc);
+	$report = get_report($resort);
 	if( $report )
-	{
-		resort_set_weather($resorts, $loc, &$report);
-
-		cache_create($cache_file, $report);
-	}
-}
-
-function get_url($loc)
-{
-	if( $loc == 'ATA') $val = 'alta_ski_area';
-	else if( $loc == 'BVR') $val = 'beaver_mountain';
-	else if( $loc == 'BHR') $val = 'brian_head_resort';
-	else if( $loc == 'BRT') $val = 'brighton_ski_resort';
-	else if( $loc == 'CNY') $val = 'the_canyons';
-	else if( $loc == 'DVR') $val = 'deer_valley_resort';
-	else if( $loc == 'PCM') $val = 'park_city_mountain_resort';
-	else if( $loc == 'POW') $val = 'powder_mountain_resort';
-	else if( $loc == 'SBN') $val = 'snowbasin';
-	else if( $loc == 'SBD') $val = 'snowbird_ski_and_summer_resort';
-	else if( $loc == 'SOL') $val = 'solitude_mountain_resort';
-	else if( $loc == 'SUN') $val = 'sundance_resort';
-	else if( $loc == 'WLF') $val = 'wolf_creek_utah_ski_resort';
-
-	return 'http://www.skiutah.com/winter/members/'.$val.'/resort';
+		cache_create($resort, $cache_file, $report);
 }
 
 function get_report_contents($url)
@@ -90,15 +66,11 @@ function get_report_contents($url)
 	return substr($contents, $idx1, $idx2-$idx1);
 }
 
-function get_report($resorts, $loc)
+function get_report($resort)
 {
-	$url = get_url($loc);
-	$contents = get_report_contents($url);
+	$contents = get_report_contents($resort->info);
 
 	$data = array();
-	$data['location'] = resort_get_readable_location($resorts, $loc);
-
-	$data['location.info'] = $url;
 
 	preg_match_all("/Updated: <span>(.*)<\/span/", $contents, $matches, PREG_OFFSET_CAPTURE);
 	$data['date'] = $matches[1][0][0];
@@ -121,25 +93,6 @@ function get_report($resorts, $loc)
 	$data['lifts.total'] = $matches[2][1][0];
 
 	return $data;
-}
-
-function build_resorts_table()
-{
-	$resorts['ATA'] = resort_props('Alta',            array(40.57972, -111.6375));
-	$resorts['BVR'] = resort_props('Beaver Mountain', array(41.96833, -111.54083));
-	$resorts['BHR'] = resort_props('Brian Head',      array(37.69194, -112.83722));
-	$resorts['BRT'] = resort_props('Brighton',        array(40.6,     -111.58278));
-	$resorts['CNY'] = resort_props('The Canyons',     array(40.68525, -111.556375));
-	$resorts['DVR'] = resort_props('Deer Valley',     array(40.63139, -111.47861));
-	$resorts['PCM'] = resort_props('Park City',       array(40.64361, -111.50417));
-	$resorts['POW'] = resort_props('Powder Mountain', array(41.37778, -111.77111));
-	$resorts['SBN'] = resort_props('Snowbasin',       array(41.21194, -111.85111));
-	$resorts['SBD'] = resort_props('Snowbird',        array(40.57805, -111.666755));
-	$resorts['SOL'] = resort_props('Solitude',        array(40.62556, -111.59444));
-	$resorts['SUN'] = resort_props('Sundance',        array(40.38583, -111.58083));
-	$resorts['WLF'] = resort_props('Wolf Creek',      array(40.47667, -111.02361));
-
-	return $resorts;
 }
 
 ?>

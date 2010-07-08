@@ -26,28 +26,17 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('common.inc');
+require_once('nwac.inc');
 
 header( "Content-Type: text/plain" );
 
-	//first declare the valid locations
-	$locations = array();
-	$locations["OSOALP"] = array(47.44333, -121.42833 );
-	$locations["OSOCMT"] = array(46.92833, -121.50333);
-	$locations["OSOHUR"] = array(47.975, -123.51667);
-	$locations["OSOMSR"] = array(47.29194, -120.39778);
-	$locations["OSOMTB"] = array(48.857322, -121.660143 );
-	$locations["OSOSK9"] = array(47.75, -121.09);
-	$locations["OSOSNO"] = array(47.42222, -121.41);
-	$locations["OSOWPS"] = array(46.63556, -121.38639);
-	$locations["OSOGVT"] = array(45.297155, -121.756492);
-	$locations["OSOMHM"] = array(45.33185, -121.664631);
-
 	$location = $_GET['location'];
+$location = "OSOSNO";
+	$resorts = resorts_nwac_get();
+	$resort = resort_get_location($resorts, $location);
+
 	$url = 'http://www.nwac.us/products/'.$location;
 	$url48 = 'http://www.nwac.us/products/archive/'.$location.'.1';
-
-	check_location($location);
 
 	$cache_file = 'nwac_'.$location.'.txt';
 	$found_cache = cache_available($cache_file, 1200); //60*20 = 20 minutes
@@ -65,23 +54,12 @@ header( "Content-Type: text/plain" );
 		$report2 = get_report_summary($lines, $data_start, $columns);
 		$report_date = $tmp;
 
-		cache_summary($location, $report_date, $report, $report2);
+		cache_summary($resort, $cache_file, $report_date, $report, $report2);
 	}
 
 	cache_dump($cache_file, $found_cache);
 
-function check_location($location)
-{
-	global $locations;
-
-	if( !array_key_exists($location, $locations) )
-	{
-		print "ERROR: invalid location [$location]\n";
-		exit(1);
-	}
-}
-
-function cache_summary($location, $report_date, $report, $report2)
+function cache_summary($resort, $cache_file, $report_date, $report, $report2)
 {
 	$summary = array();
 	$summary['snow.daily'] = "";
@@ -122,18 +100,11 @@ function cache_summary($location, $report_date, $report, $report2)
 		}
 	}
 
-	$summary['location'] = $location;
 	$summary['date'] = $report_date;
 	$summary['snow.units'] = 'inches';
-	$summary['details.url'] = "http://www.nwac.us/products/$location";
+	$summary['details.url'] = "http://www.nwac.us/products/$resort->code";
 
-	global $locations;
-	global $cache_file;
-	list($lat, $lon) = $locations[$location];
-
-	Weather::set_props($lat, $lon, &$summary);
-
-	cache_create($cache_file, $summary);
+	cache_create($resort, $cache_file, $summary);
 }
 
 // returns an array of list(metric, measurment)

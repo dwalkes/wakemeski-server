@@ -26,44 +26,31 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('common.inc');
+require_once('co.inc');
 
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
 
-	$resorts = build_resorts_table();
-
-	resort_assert_location($resorts, $location);
+	$resorts = resorts_co_get();
+	$resort = resort_get_location($resorts, $location);
 
 	$cache_file = 'co_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
 	{
-		write_report($location);
+		write_report($resort, $cache_file);
 	}
 
 	cache_dump($cache_file, $found_cache);
 
-
-function write_report($loc)
+function write_report($resort, $cache_file)
 {
-	global $resorts, $cache_file;
-
-	$readable = resort_get_readable_location($resorts, $loc);
-	$report = get_location_report($readable);
-	if( $report )
+	$xml = get_location_report($resort);
+	if( $xml )
 	{
-		$props = get_report_props($report);
-		$props['location'] = $loc;
-
-		resort_set_weather($resorts, $loc, &$props);
-
-		cache_create($cache_file, $props);
-	}
-	else
-	{
-		print("err.msg=No ski report data found\n");
+		$props = get_report_props($xml);
+		cache_create($resort, $cache_file, $props);
 	}
 }
 
@@ -107,7 +94,7 @@ function get_report_props($report)
  * Returns the XML node containing the report for a given location or false
  * if one is not found
  */
-function get_location_report($loc)
+function get_location_report($resort)
 {
 	$dom = get_report_xml();
 
@@ -116,7 +103,8 @@ function get_location_report($loc)
 	{
 		$title_node = $items->item($i)->getElementsByTagName('title')->item(0);
 		$title = trim($title_node->firstChild->nodeValue);
-		if(preg_match("/$loc/", $title) )
+		$name = $resort->name;
+		if(preg_match("/$name/", $title) )
 		{
 		    return $items->item($i);
 		}
@@ -130,34 +118,6 @@ function get_report_xml()
 	$xml = file_get_contents("http://feeds.feedburner.com/snowreport");
 	$sxe = simplexml_load_string($xml);
 	return dom_import_simplexml($sxe);
-}
-
-function build_resorts_table()
-{
-	$resorts['AB'] = resort_props('Arapahoe Basin',     array(39.6448,   -105.871));
-	$resorts['AH'] = resort_props('Aspen Highlands',    array(39.181711, -106.856121));
-	$resorts['AM'] = resort_props('Aspen Mountain',     array(39.18428,  -106.821903));
-	$resorts['BM'] = resort_props('Buttermilk',         array(39.205167, -106.859294));
-	$resorts['CM'] = resort_props('Copper Mountain',    array(39.4944,   -106.138732));
-	$resorts['CB'] = resort_props('Crested Butte',      array(38.899932, -106.964249));
-	$resorts['EM'] = resort_props('Echo Mountain',      array(37.591389, -107.571726));
-	$resorts['EL'] = resort_props('Eldora',             array(39.937341, -105.5853));
-	$resorts['HW'] = resort_props('Howelsen',           array(40.480533, -106.840605));
-	$resorts['LV'] = resort_props('Loveland',           array(39.680191, -105.898114));
-	$resorts['MM'] = resort_props('Monarch Mountain',   array(38.512285, -106.332957));
-	$resorts['PH'] = resort_props('Powderhorn',         array(39.068912, -108.15068));
-	$resorts['PG'] = resort_props('Purgatory',          array(37.629261, -107.815288));
-	$resorts['SM'] = resort_props('Silverton Mountain', array(37.791067, -107.666171));
-	$resorts['SC'] = resort_props('Ski Cooper',         array(39.358897, -106.299256));
-	$resorts['SN'] = resort_props('Snowmass',           array(39.162132, -106.787847));
-	$resorts['SV'] = resort_props('Sol Vista Basin',    array(40.04784,  -105.898969));
-	$resorts['ST'] = resort_props('Steamboat',          array(40.458905, -106.802092));
-	$resorts['SL'] = resort_props('Sunlight',           array(39.398121, -107.339174));
-	$resorts['TD'] = resort_props('Telluride',          array(37.9392,   -107.8163));
-	$resorts['WP'] = resort_props('Winter Park',        array(39.886791, -105.764279));
-	$resorts['WC'] = resort_props('Wolf Creek',         array(37.472654, -106.793116));
-
-	return $resorts;
 }
 
 ?>
