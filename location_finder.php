@@ -46,13 +46,20 @@ $regions = array(
 	region_create_switzerland()
 );
 
-	header( "Content-Type: text/plain" );
+header( "Content-Type: text/plain" );
 
-	$region = $_GET['region'];
-	if( !$region )
-		show_regions();
+	if( isset($_GET['showall']) )
+	{
+		show_all();
+	}
 	else
-		show_locations($region);
+	{
+		$region = $_GET['region'];
+		if( !$region )
+			show_regions();
+		else
+			show_locations($region);
+	}
 
 function show_regions()
 {
@@ -78,4 +85,16 @@ function show_locations($region_name)
 		}
 	}
 }
+
+function show_all()
+{
+	global $regions;
+	foreach($regions as $region)
+	{
+		print "REGION = $region->name\n";
+		foreach($region->locations as $loc)
+			print "\t$loc->code = $loc->name\n";
+	}
+}
+
 ?>
