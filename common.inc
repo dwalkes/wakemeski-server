@@ -53,29 +53,36 @@ function cache_available($file, $age=7200)
  */
 function cache_create($resort, $file, $report)
 {
-	$fp = fopen($file, 'w');
+	//open in append mode, since opening in write mode would truncate
+	//file even if we didn't have the lock
+	$fp = fopen($file, 'a');
 
-	if( $report )
+	if( $fp && flock($fp, LOCK_EX) )
 	{
-		$report['location'] = $resort->name;
-		$report['location.info'] = $resort->info;
-
-		if( !isset($report['weather.url']) )
-			Weather::set_props($resort->lat, $resort->lon, &$report);
-
-		$keys = array_keys($report);
-		for($i = 0; $i < count($keys); $i++)
+		ftruncate($fp, 0) ; // erase the contents such as 'w+'
+		if( $report )
 		{
-			$key = $keys[$i];
-			fwrite($fp, $key.' = '.$report[$key]."\n");
-		}
-	}
-	else
-	{
-		fwrite($fp, "err.msg=No ski report data found\n");
-	}
+			$report['location'] = $resort->name;
+			$report['location.info'] = $resort->info;
 
-	fclose($fp);
+			if( !isset($report['weather.url']) )
+				Weather::set_props($resort->lat, $resort->lon, &$report);
+
+			$keys = array_keys($report);
+			for($i = 0; $i < count($keys); $i++)
+			{
+				$key = $keys[$i];
+				fwrite($fp, $key.' = '.$report[$key]."\n");
+			}
+		}
+		else
+		{
+			fwrite($fp, "err.msg=No ski report data found\n");
+		}
+
+		flock($fp, LOCK_UN);
+		fclose($fp);
+	}
 }
 
 /**
@@ -83,12 +90,19 @@ function cache_create($resort, $file, $report)
  */
 function cache_dump($file, $found)
 {
-	if( is_readable($file) )
+	$fp = fopen($file, 'r');
+
+	if( $fp && flock($fp, LOCK_SH) )
 	{
+		while( $line = fgets($fp) )
+			print $line;
+
+		flock($fp, LOCK_UN);
+		fclose($fp);
+
 		$val = '0';
 		if( $found )
 			$val = '1';
-		print file_get_contents($file);
 		print "cache.found=$val\n";
 	}
 	else
