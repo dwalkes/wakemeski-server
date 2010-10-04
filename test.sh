@@ -10,10 +10,11 @@ function usage
     exit 1
 }
 
-while getopts   "s:c" optn; do
+while getopts   "s:cv" optn; do
     case    $optn   in
         s   )   SERVER=$OPTARG;;
         c   )   CACHE="&nocache=1" ;;
+	v   )   VERBOSE=1;;
         \?  )   echo "invalid option: $OPTARG" ; usage;  exit  -1;;
     esac
 done
@@ -28,8 +29,39 @@ LOCATIONS="
 	eu_report.php?location=fchm
 "
 
+#required properties to ensure get reported
+PROPERTIES="
+	snow.total
+	snow.daily
+	snow.fresh
+	snow.units
+	date
+	weather.url
+	weather.icon
+	location
+	location.info
+	cache.found
+"
+FAILED=0
 for loc in ${LOCATIONS}; do
-	echo "- getting ${SERVER}/${loc}"
-	curl ${SERVER}/${loc}${CACHE}
-	echo "-----------------------------------------------------------------"
+	output=/tmp/wakemeski.$$
+	echo "= testing: ${SERVER}/${loc}"
+	curl -o $output -s ${SERVER}/${loc}${CACHE}
+	if [ $? -eq 0 ] ; then
+		[ $VERBOSE ] && cat $output
+		#ensure each required report property is found:
+		for p in ${PROPERTIES}; do
+			grep "$p[[:space:]]*=" $output > /dev/null
+			if [ $? -ne 0 ] ; then
+				echo "ERROR: missing required property($p)"
+				FAILED=1
+			fi
+		done
+	else
+		echo "ERROR getting report"
+		FAILED=1
+	fi
+	rm -f $output
 done
+
+exit $FAILED
