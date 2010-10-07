@@ -4,7 +4,7 @@ require_once('common.inc');
 
 function region_create_or()
 {
-	$nwc_base = 'http://bettykrocks.com/skireport/nwac_report.php';
+	$nwc_base = 'nwac_report.php';
 
 	return create_region("Oregon",
 		array(
@@ -22,7 +22,7 @@ function region_create_or()
 
 function region_create_wa()
 {
-	$nwc_base = 'http://bettykrocks.com/skireport/nwac_report.php';
+	$nwc_base = 'nwac_report.php';
 
 	return create_region("Washington",
 		array(

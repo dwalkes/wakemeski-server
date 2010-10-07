@@ -2,7 +2,7 @@
 
 require_once('common.inc');
 
-$eu_base = 'http://bettykrocks.com/skireport/eu_report.php';
+$eu_base = 'eu_report.php';
 
 function fr_url($name)
 {
