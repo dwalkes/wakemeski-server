@@ -9,7 +9,7 @@ function report_url($name)
 
 function region_create_ut()
 {
-	$ut_base = 'http://bettykrocks.com/skireport/ut_report.php';
+	$ut_base = 'ut_report.php';
 
 	return create_region("Utah",
 		array(

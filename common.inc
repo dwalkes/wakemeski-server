@@ -64,6 +64,8 @@ function cache_create($resort, $file, $report)
 		{
 			$report['location'] = $resort->name;
 			$report['location.info'] = $resort->info;
+			$report['ap.min.supported.version'] = '1';
+			$report['ap.latest.version']='1';
 
 			if( !isset($report['weather.url']) )
 				Weather::set_props($resort->lat, $resort->lon, &$report);

@@ -4,7 +4,7 @@ require_once('common.inc');
 
 function region_create_mt()
 {
-	$mt_base = 'http://bettykrocks.com/skireport/mt_report.php';
+	$mt_base = 'mt_report.php';
 
 	return create_region("Montana",
 		array(

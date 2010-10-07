@@ -4,7 +4,7 @@ require_once('common.inc');
 
 function region_create_nv()
 {
-	$co2_base = 'http://bettykrocks.com/skireport/co_report2.php';
+	$co2_base = 'co_report2.php';
 
 	return create_region("Nevada",
 		array(
