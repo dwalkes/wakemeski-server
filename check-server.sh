@@ -27,5 +27,5 @@ if [ $rc -ne 0 ] || [ $VERBOSE ] ; then
 		echo "Subject: $SUBJ"
 		echo 
 		cat $output
-	} | ssmtp $RECIPIENTS
+	} | /usr/sbin/ssmtp $RECIPIENTS
 fi
