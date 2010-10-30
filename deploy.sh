@@ -1,8 +1,13 @@
 #!/bin/bash
 
-USER=bettykro
-SERVER=bettykrocks.com
-LOC=/home/bettykro/www/skireport/
+# Get defaults
+# Create a symbolic link to the appropriate defaults
+# file
+if [ ! -f defaults.sh ]; then
+    echo "error no defaults.sh found. please set up symlink";
+    exit -1
+fi
+. ./defaults.sh
 
 function usage
 {
