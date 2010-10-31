@@ -62,7 +62,11 @@ function get_report_contents($url)
 	if( $idx1 === false || $idx2 === false)
 	{
 		print "err.msg=report format changed. server update required\n";
-		exit(1);
+		/*
+		 *  return an empty string instead of exiting, that way we still write
+		 *  additional common report detail in cache_create
+		 */ 
+		return "";
 	}
 
 	return substr($contents, $idx1, $idx2-$idx1);

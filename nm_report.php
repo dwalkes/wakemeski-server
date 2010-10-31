@@ -66,7 +66,13 @@ function get_report($resort)
 	for($i = 0; $i < count($locations); $i++)
 	{
 		$report = get_report_props($locations[$i]);
-		if( $report['location'] == $resort->name )
+		/*
+		 * This report changed in 2010 to use "Angel Fire Resort" and
+		 * list "x-c" (cross country?) after Enchanted Forest.  Also uses "Taos Ski Valley" instead
+		 * of Taos.  Use a strpos check instead of a == to handle these cases
+		 */
+		$pos = strpos($report['location'],$resort->name);
+		if( $pos !== false )
 			return $report;
 	}
 }

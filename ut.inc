@@ -49,9 +49,9 @@ function region_create_ut()
 			create_loc('Sundance',          $ut_base,
 			           'SUN', 40.38583, -111.58083,
 			           report_url('sundance_resort')),
-			create_loc('Wolf Creek',        $ut_base,
+			create_loc('Wolf Mountain',        $ut_base,
 			           'WLF', 40.47667, -111.02361,
-			           report_url('wolf_creek_utah_ski_resort')),
+			           report_url('wolf_mountain')),
 		));
 }
 
