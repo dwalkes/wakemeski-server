@@ -35,6 +35,8 @@ header( "Content-Type: text/plain" );
 	$resorts = resorts_ut_get();
 	$resort = resort_get_location($resorts, $location);
 
+	$resort->fresh_source_url = $resort->info;
+	
 	$cache_file = 'ut_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
@@ -68,7 +70,7 @@ function get_report_contents($url)
 
 function get_report($resort)
 {
-	$contents = get_report_contents($resort->info);
+	$contents = get_report_contents($resort->fresh_source_url);
 
 	$data = array();
 

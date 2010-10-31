@@ -34,6 +34,7 @@ header( "Content-Type: text/plain" );
 
 	$resorts = resorts_mt_get();
 	$resort = resort_get_location($resorts, $location);
+	$resort->fresh_source_url = "http://feeds.visitmt.com/rss/?feedid=15";
 
 	$cache_file = 'mt_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
@@ -62,7 +63,7 @@ function get_report($resort)
 	//note the content is technically XML, but its a pretty loose form.
 	//its actually easier to break up with regular expressions than dealing
 	//with it as a DOM
-	$contents = file_get_contents("http://feeds.visitmt.com/rss/?feedid=15");
+	$contents = file_get_contents($resort->fresh_source_url);
 
 	//make everything one line for the regular expressions to work
 	$contents = str_replace("\n", "\t",  $contents);

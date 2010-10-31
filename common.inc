@@ -66,6 +66,7 @@ function cache_create($resort, $file, $report)
 			$report['location.info'] = $resort->info;
 			$report['ap.min.supported.version'] = '1';
 			$report['ap.latest.version']='1';
+			$report['fresh.source.url']=$resort->fresh_source_url;
 
 			if( !isset($report['weather.url']) )
 				Weather::set_props($resort->lat, $resort->lon, &$report);
@@ -118,7 +119,12 @@ function create_loc($name, $url_base, $code, $lat=0, $lon=0, $info_url='',
 {
 	return (object)array('name'=>$name, 'url_base'=>$url_base, 'code'=>$code,
 				'info'=>$info_url, 'lat'=>$lat, 'lon'=>$lon,
-				'data'=>$data);
+				'data'=>$data, 
+				/*
+				 * Allocate a member for storing fresh source URL info.  Will
+				 * be populated by each individual script if different than info_url
+				 */
+				'fresh_source_url'=> $info_url);
 }
 
 function create_region($name, $locations)

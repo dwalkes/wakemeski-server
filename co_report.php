@@ -35,6 +35,8 @@ header( "Content-Type: text/plain" );
 	$resorts = resorts_co_get();
 	$resort = resort_get_location($resorts, $location);
 
+	$resort->fresh_source_url = "http://feeds.feedburner.com/snowreport";
+	
 	$cache_file = 'co_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
@@ -96,7 +98,7 @@ function get_report_props($report)
  */
 function get_location_report($resort)
 {
-	$dom = get_report_xml();
+	$dom = get_report_xml($resort);
 
 	$items = $dom->getElementsByTagName('item');
 	for ($i = 0; $i < $items->length; $i++)
@@ -113,9 +115,9 @@ function get_location_report($resort)
 	return false;
 }
 
-function get_report_xml()
+function get_report_xml($resort)
 {
-	$xml = file_get_contents("http://feeds.feedburner.com/snowreport");
+	$xml = file_get_contents($resort->fresh_source_url);
 	$sxe = simplexml_load_string($xml);
 	return dom_import_simplexml($sxe);
 }

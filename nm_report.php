@@ -35,6 +35,8 @@ header( "Content-Type: text/plain" );
 	$resorts = resorts_nm_get();
 	$resort = resort_get_location($resorts, $location);
 
+	$resort->fresh_source_url = "http://skinewmexico.com/snow_reports/feed.rss";
+		
 	$cache_file = 'nm_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
@@ -53,7 +55,7 @@ function write_report($resort, $cache_file)
 
 function get_report($resort)
 {
-	$contents = file_get_contents("http://skinewmexico.com/snow_reports/feed.rss");
+	$contents = file_get_contents($resort->fresh_source_url);
 
 	//each location is in an <item> tag
 	$locations = preg_split("/<item>/", $contents);

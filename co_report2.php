@@ -27,14 +27,18 @@
  */
 
 require_once('co.inc');
+require_once('nv.inc');
 
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
-
-	$resorts = resorts_co_get();
+	
+	$resorts = array_merge(resorts_co_get(),resorts_nv_co_report2_get());
+	
 	$resort = resort_get_location($resorts, $location);
 
+	$resort->fresh_source_url = "http://snow.com/rssfeeds/snowreports.aspx";
+	
 	$cache_file = 'co2_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
 	if( !$found_cache )
@@ -54,7 +58,7 @@ function write_report($resort, $cache_file)
 function get_report($resort)
 {
 	global $resorts;
-	$contents = file_get_contents("http://snow.com/rssfeeds/snowreports.aspx");
+	$contents = file_get_contents($resort->fresh_source_url);
 
 	//each location is in an <item> tag
 	$locations = preg_split("/<item>/", $contents);
@@ -107,15 +111,5 @@ function get_report_props($body)
 	return $data;
 }
 
-function build_resorts_table()
-{
-	$resorts['VA'] = resort_props('Vail',         array(39.639423,-106.371),   'http://www.vail.com/');
-	$resorts['BC'] = resort_props('Beaver Creek', array(39.60253, -106.5171),  'http://www.beavercreek.com');
-	$resorts['KS'] = resort_props('Keystone',     array(39.60402, -105.95433), 'http://www.keystoneresort.com');
-	$resorts['BK'] = resort_props('Breckenridge', array(39.474249,-106.04881), 'http://www.breckenridge.com');
-	$resorts['HV'] = resort_props('Heavenly',     array(38.934787,-119.940384),'http://www.skiheavenly.com');
-
-	return $resorts;
-}
 
 ?>

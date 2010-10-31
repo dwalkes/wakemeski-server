@@ -4,7 +4,7 @@ require_once('common.inc');
 
 function region_create_nm()
 {
-	$nm_base = 'mt_report.php';
+	$nm_base = 'nm_report.php';
 
 	return create_region("New Mexico",
 		array(

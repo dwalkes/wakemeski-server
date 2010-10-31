@@ -41,7 +41,7 @@ function region_create_co()
 			           'SC', 39.358897, -106.299256),
 			create_loc('Snowmass',           $co_base,
 			           'SN', 39.162132, -106.787847),
-			create_loc('Sol Vista Basin',    $co_base,
+			create_loc('SolVista Basin',    $co_base,
 			           'SV', 40.04784,  -105.898969),
 			create_loc('Steamboat',          $co_base,
 			           'ST', 40.458905, -106.802092),
