@@ -64,8 +64,6 @@ function cache_create($resort, $file, $report)
 		{
 			$report['location'] = $resort->name;
 			$report['location.info'] = $resort->info;
-			$report['ap.min.supported.version'] = '1';
-			$report['ap.latest.version']='1';
 			$report['fresh.source.url']=$resort->fresh_source_url;
 
 			if( !isset($report['weather.url']) )
