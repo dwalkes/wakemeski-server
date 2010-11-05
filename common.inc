@@ -52,6 +52,7 @@ function cache_available($file, $age=7200)
 	if( $_GET['nocache'] == '1' )
 		return false;
 
+	$file = '.cache/'.$file;
 	if( is_readable($file))
 	{
 		//get modification time stamp. If its less than
@@ -68,6 +69,8 @@ function cache_available($file, $age=7200)
  */
 function cache_create($resort, $file, $report)
 {
+	$file = '.cache/'.$file;
+
 	//open in append mode, since opening in write mode would truncate
 	//file even if we didn't have the lock
 	$fp = fopen($file, 'a');
@@ -106,6 +109,7 @@ function cache_create($resort, $file, $report)
  */
 function cache_dump($file, $found)
 {
+	$file = '.cache/'.$file;
 	$fp = fopen($file, 'r');
 
 	if( $fp && flock($fp, LOCK_SH) )

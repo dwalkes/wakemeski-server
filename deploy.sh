@@ -35,5 +35,9 @@ cd $DIR
 
 git log -1 > $GITFILE
 
+echo "clearing installation cache"
+ssh ${USER}@${SERVER} "rm -rf ${LOC}/.cache; mkdir ${LOC}/.cache"
+
+echo "copying new new files"
 scp *.php *.inc $GITFILE ${USER}@${SERVER}:${LOC}/
 rm $GITFILE
