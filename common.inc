@@ -29,6 +29,21 @@
 require_once('weather.inc');
 
 /**
+ * Uses the regular expression to find a value. if the value isn't found
+ * the value "n/a" will be returned
+ */
+function find_int($regex, $text)
+{
+	if( !preg_match_all($regex, $text, $matches, PREG_OFFSET_CAPTURE) )
+		return 'n/a';
+
+	if( $matches[1][0][0] === FALSE )
+		return 'n/a';
+
+	return $matches[1][0][0];
+}
+
+/**
  * Returns true if the given cache file is available
  * @param - age default of 7200=(2 hours in seconds)
  */

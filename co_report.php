@@ -64,16 +64,26 @@ function get_report_props($report)
 	$props = array();
 	$data = $report->getElementsByTagName('description')->item(0)->nodeValue;
 
-	preg_match_all("/New Snow Last 24 Hours: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
-	$day = $matches[1][0][0];
-	preg_match_all("/New Snow Last 48 hours: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
-	$yesterday = $matches[1][0][0];
-	$props['snow.daily'] = "Fresh($day) 48hr($yesterday)";
-	$props['snow.fresh'] = $day;
+	$props['snow.daily'] = 'n/a';
+	$props['snow.fresh'] = 'n/a';
+
+	$day = find_int("/New Snow Last 24 Hours: (\d+)/", $data);
+	$yesterday = find_int("/New Snow Last 48 hours: (\d+)/", $data);
+
+	if( $day != 'n/a' )
+	{
+		$props['snow.daily'] = "Fresh($day)";
+		$props['snow.fresh'] = $day;
+	}
+
+	if( $yesterday != 'n/a' && $day != 'n/a' )
+		$props['snow.daily'] .= " 48hr($yesterday)";
+	else if( $yesterday != 'n/a' )
+		$props['snow.daily'] = "48hr($yesterday)";
+
 	$props['snow.units'] = 'inches';
 
-	preg_match_all("/Mid-Mountain Depth: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
-	$props['snow.total'] = $matches[1][0][0];
+	$props['snow.total'] = find_int("/Mid-Mountain Depth: (\d+)/", $data);
 
 	preg_match_all("/Lifts Open: (\d+)\/(\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
 	$props['lifts.open'] = $matches[1][0][0];

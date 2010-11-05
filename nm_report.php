@@ -86,19 +86,15 @@ function get_report_props($body)
 	preg_match_all("/<pubDate>(.*)<\/pubDate>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	$data['date'] = $matches[1][0][0];
 
-	preg_match_all("/New Natural Snow Last 48 Hours: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['snow.fresh'] = $matches[1][0][0];
-	else
-		$data['snow.fresh'] = 'none';
-	$data['snow.daily'] = 'Fresh('.$data['snow.fresh'].')';
+	$data['snow.fresh'] = find_int("/New Natural Snow Last 48 Hours: <b>(\d+)/", $body);
+
+	$data['snow.daily'] = 'n/a';
+	if( $data['snow.fresh'] != 'n/a' )
+		$data['snow.daily'] = 'Fresh('.$data['snow.fresh'].')';
+
 	$data['snow.units'] = 'inches';
 
-	preg_match_all("/Base Snow Depth \(inches\): <b>(.*?)&quot;/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['snow.total'] = $matches[1][0][0];
-	else
-		$data['snow.total'] = '?';
+	$data['snow.total'] = find_int("/Base Snow Depth \(inches\): <b>(\d+)&quot;/", $body);
 
 	preg_match_all("/Trails Open: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
