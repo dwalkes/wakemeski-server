@@ -96,21 +96,19 @@ function get_report_props($body)
 
 	$data['snow.total'] = find_int("/Base Snow Depth \(inches\): <b>(\d+)&quot;/", $body);
 
-	preg_match_all("/Trails Open: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['trails.open'] = $matches[1][0][0];
-	else
-		$data['trails.open'] = 0;
-
-	preg_match_all("/Lifts Open: <b>(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['lifts.open'] = $matches[1][0][0];
-	else
-		$data['lifts.open'] = 0;
+	$data['trails.open'] = find_int("/Trails Open: <b>(\d+)/", $body);
+	$data['lifts.open']  = find_int("/Lifts Open: <b>(\d+)/", $body);
 
 	preg_match_all("/Surface Cond&#58; (.*?)<\/title>/", $body, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 		$data['snow.conditions'] = $matches[1][0][0];
+
+	//NOTE: The comment (for Sandia Peak) is multi. So the regex is missing it
+	//      We combine things as one line so it will find it
+	$body = str_replace("\n", " ", $body);	
+	preg_match_all("/<p>Comments:\s+<b>(.*?)<\/b>/", $body, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+		$data['location.comments'] = trim($matches[1][0][0]);
 
 	return $data;
 }

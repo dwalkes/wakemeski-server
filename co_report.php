@@ -93,6 +93,15 @@ function get_report_props($report)
 	if( $matches[1][0][0] )
 		$props['snow.conditions'] = $matches[1][0][0];
 
+	preg_match_all("/Comments:\s+(.*?)<br/", $data, $matches, PREG_OFFSET_CAPTURE);
+	if( $matches[1][0][0] )
+	{
+		$props['location.comments'] = strip_tags($matches[1][0][0]);
+		//ensure we don't just give an empty comment
+		if( $props['location.comments'] == '--' )
+			unset($props['location.comments']);
+	}
+
 	$date = $report->getElementsByTagName('pubDate')->item(0)->nodeValue;
 	$date = strtotime($date);
 	$props['date'] = date("h:ia M j", $date);
