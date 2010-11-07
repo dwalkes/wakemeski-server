@@ -27,6 +27,7 @@
  */
 
 require('co.inc');
+require('me.inc');
 require('mt.inc');
 require('nm.inc');
 require('nv.inc');
@@ -36,6 +37,7 @@ require('eu.inc');
 
 $regions = array(
 	region_create_co(),
+	region_create_me(),
 	region_create_mt(),
 	region_create_nm(),
 	region_create_nv(),
