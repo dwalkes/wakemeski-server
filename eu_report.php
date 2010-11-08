@@ -69,13 +69,29 @@ function get_report_props($url, $report)
 	$lower = $matches[1][0][0];
 	$props['snow.total'] = "Lower ($lower), Upper($upper)";
 
-	preg_match_all("/<th>Fresh Snow<\/th><td>(\d+)/", $report, $matches, PREG_OFFSET_CAPTURE);
-	$props['snow.daily'] = "Fresh(".$matches[1][0][0]."cm)";
-	$props['snow.fresh'] = $matches[1][0][0];
+	$num_matches = preg_match_all("/<th>Fresh Snow<\/th><td>(\d+)/", $report, $matches, PREG_OFFSET_CAPTURE);
+
+	$fresh = $matches[1][0][0];
+	
+	if( $num_matches == 0 ) 
+	{
+		// if no matches were found looking for ints, look for a single - instead.  
+		// This means 0 fresh snow in this report.
+		$num_matches = preg_match_all("/<th>Fresh Snow<\/th><td>-/", $report, $matches, PREG_OFFSET_CAPTURE);
+		if( $num_matches > 0 ) 
+		{
+			$fresh = "0";
+		}
+	}
+	
+	
+	$props['snow.daily'] = "Fresh(".$fresh."cm)";
+	$props['snow.fresh'] = $fresh;
 	$props['snow.units'] = 'cm';
 
+	// Area open is reported as %
 	preg_match_all("/<th>Area Open<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE);
-	$props['trails.total'] = $matches[1][0][0];
+	$props['trails.percent.open'] = $matches[1][0][0];
 
 	preg_match_all("/<th>Conditions<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE);
 	$props['snow.conditions'] = $matches[1][0][0];
