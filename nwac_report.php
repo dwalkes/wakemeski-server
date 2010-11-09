@@ -31,7 +31,7 @@ require_once('nwac.inc');
 header( "Content-Type: text/plain" );
 
 	$location = $_GET['location'];
-$location = "OSOSNO";
+
 	$resorts = resorts_nwac_get();
 	$resort = resort_get_location($resorts, $location);
 
