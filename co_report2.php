@@ -48,6 +48,8 @@ header( "Content-Type: text/plain" );
 
 	cache_dump($cache_file, $found_cache);
 
+	log_hit('co_report2.php', $location, $found_cache);
+
 function write_report($resort, $cache_file)
 {
 	$report = get_report($resort);

@@ -70,6 +70,8 @@ function show_regions()
 	{
 		print $region->name."\n";
 	}
+
+	log_hit('location_finder.php', "show_regions", false);
 }
 
 function show_locations($region_name)
@@ -86,6 +88,8 @@ function show_locations($region_name)
 			break;
 		}
 	}
+
+	log_hit('location_finder.php', $region_name, false);
 }
 
 function show_all()

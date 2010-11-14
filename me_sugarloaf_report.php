@@ -46,6 +46,8 @@ header( "Content-Type: text/plain" );
 
 	cache_dump($cache_file, $found_cache);
 
+	log_hit('me_sugarloaf_report.php', $location, $found_cache);
+
 function write_report($resort, $cache_file)
 {
 	$xml = get_location_report($resort);

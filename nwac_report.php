@@ -60,6 +60,7 @@ header( "Content-Type: text/plain" );
 	}
 
 	cache_dump($cache_file, $found_cache);
+	log_hit('nwac_report.php', $location, $found_cache);
 
 function cache_summary($resort, $cache_file, $report_date, $report, $report2)
 {

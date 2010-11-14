@@ -165,4 +165,36 @@ function resort_get_location($resorts, $code)
 	exit(1);
 }
 
+/**
+ * Logs access to a particular page by a particular user so that we can
+ * understand how people are using this application.
+ */
+function log_hit($page, $location='null', $found_cache=false)
+{
+	$file = './hits_log';
+
+	$id = 'n/a';
+	if( isset($_GET['id']) )
+		$id = $_GET['id'];
+
+	if( $found_cache )
+		$found_cache = 'cached';
+	else
+		$found_cache = 'uncached';
+
+	//open in append mode, since opening in write mode would truncate
+	//file even if we didn't have the lock
+	$fp = fopen($file, 'a');
+
+	if( $fp && flock($fp, LOCK_EX) )
+	{
+		$time = $_SERVER['REQUEST_TIME'];
+
+		fwrite($fp, "$id\t$time\t$page\t$location\t$found_cache\n");
+
+		flock($fp, LOCK_UN);
+		fclose($fp);
+	}
+}
+
 ?>

@@ -46,6 +46,8 @@ header( "Content-Type: text/plain" );
 
 	cache_dump($cache_file, $found_cache);
 
+	log_hit('nm_report.php', $location, $found_cache);
+
 function write_report($resort, $cache_file)
 {
 	$report = get_report($resort);
