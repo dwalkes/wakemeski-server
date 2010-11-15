@@ -34,7 +34,7 @@ header( "Content-Type: text/plain" );
 
 	$resorts = resorts_mt_get();
 	$resort = resort_get_location($resorts, $location);
-	$resort->fresh_source_url = "http://feeds.visitmt.com/rss/?feedid=15";
+	$resort->fresh_source_url = "http://wintermt.com/skiareas/conditions/snow.asp?id=".$resort->data;
 
 	$cache_file = 'mt_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
@@ -48,11 +48,23 @@ header( "Content-Type: text/plain" );
 function write_report($resort, $cache_file)
 {
 	$report = get_report($resort);
-	$resort->info = $report['location.info'];
 	if( $report )
 		cache_create($resort, $cache_file, $report);
 }
 
+/**
+ * Does a two-phase grep of the data to find in the report
+ */
+function grep_grep($exp1, $exp2, $data)
+{
+	if( !preg_match_all($exp1, $data, $m1, PREG_OFFSET_CAPTURE) )
+		return false;
+
+	if( !preg_match_all($exp2, $m1[1][0][0], $m2, PREG_OFFSET_CAPTURE) )
+		return false;
+
+	return trim($m2[1][0][0]);
+}
 
 /**
  * Grabs the RSS feed turns the values for the given report into a hash of:
@@ -60,82 +72,51 @@ function write_report($resort, $cache_file)
  */
 function get_report($resort)
 {
-	//note the content is technically XML, but its a pretty loose form.
-	//its actually easier to break up with regular expressions than dealing
-	//with it as a DOM
 	$contents = file_get_contents($resort->fresh_source_url);
 
 	//make everything one line for the regular expressions to work
-	$contents = str_replace("\n", "\t",  $contents);
+	$contents = str_replace("\r\n", " ", $contents);
 
-	//each location is in an <item> tag
-	$locations = preg_split("/<item>/", $contents);
-	//the first item is header junk we can ignore
-	array_shift($locations);
+	$date = grep_grep("/Date of Report:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+\/\d+\/\d+)/", $contents);
+	$time = grep_grep("/Time Reported:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+:\d+:\d+)/", $contents);
 
-	$reports = array();
-	for($i = 0; $i < count($locations); $i++)
+	$new = grep_grep("/Snow In Last 24 hrs:<\/b><\/td>(.*?)<\/td>/", "/(\d+)\"/", $contents);
+	$night = grep_grep("/New Snow Overnight:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)\"/", $contents);
+
+	$surface = grep_grep("/<b>Surface:\s+<\/b><\/td>(.*?)<\/tr>/", "/>(.*?)<\/td>/", $contents);
+	$temp = grep_grep("/Temperature:\s+<\/b><\/td>(.*?)<\/tr>/", "/>\s+(\d+)/", $contents);
+
+	$d_top = grep_grep("/Summit Depth:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
+	$d_low = grep_grep("/Lower Mountain Depth:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
+	$lifts = grep_grep("/Lifts Open:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
+
+	$report = array();
+	$report['date'] = $time." ".$date;
+
+	if($night)
 	{
-		$r = get_report_props($resort, $locations[$i]);
-		if( $r )
-		{
-			if( $report )
-			{
-				//we've hit a duplicate report, make sure we use the latest
-				$t1 = strtotime($r['date']);
-				$t2 = strtotime($report['date']);
-				if( $t2 > $t1 )
-					continue;
-			}
-			$report = $r;
-		}
+		$report['snow.fresh'] = $night;
+		$report['snow.daily'] = "Fresh($night) ";
 	}
+	if($new)
+		$report['snow.daily'] .= "24hr($new)"; 
+	$report['snow.units'] = 'inches';
+
+	if($d_low)
+		$report['snow.total'] = $d_low." ";
+	if($d_top)
+		$report['snow.total'] .= $d_top;
+
+	if($temp)
+		$report['temp.readings'] = $temp;
+
+	if($surface)
+		$report['snow.conditions'] = $surface;
+
+	if($lifts)
+		$report['lifts.open'] = $lifts;
 
 	return $report;
-}
-
-function get_report_props($resort, $body)
-{
-	$data = array();
-	preg_match_all("/<title>(.*)<\/title>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$title = $matches[1][0][0];
-	if( !strstr($title, $resort->name) )
-		return null;
-
-	preg_match_all("/<link>(.*)<\/link>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['location.info'] = $matches[1][0][0];
-
-	preg_match_all("/<pubDate>(.*)<\/pubDate>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['date'] = $matches[1][0][0];
-
-	preg_match_all("/<STRONG>New Snow:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(.*?)<\/TD>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$new = $matches[1][0][0];
-	preg_match_all("/Snow in Last 24 Hours<\/STRONG><\/TD><TD ALIGN='RIGHT'>(\d+)<\/TD>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$day = $matches[1][0][0];
-	if( !$new ) $new = 0;
-	if( !$day ) $day = 0;
-	$data['snow.daily'] = "Fresh($new) 24hr($day)";
-	$data['snow.fresh'] = $new;
-	$data['snow.units'] = 'inches';
-
-	preg_match_all("/<STRONG>Snow Depth:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(\d+)<\/TD><\/TR>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['snow.total'] = $matches[1][0][0];
-	else
-		$data['snow.total'] = '--';
-
-	preg_match_all("/Tempurature:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(.*?)<\/TD>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( !$matches[1][0][0] )
-		preg_match_all("/Temperature:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(.*?)<\/TD>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['temp.readings'] = $matches[1][0][0];
-
-
-	preg_match_all("/Surface Conditions:<\/STRONG><\/TD><TD ALIGN='RIGHT'>(.*?)<\/TD><\/TR>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['snow.conditions'] = $matches[1][0][0];
-
-	return $data;
 }
 
 ?>

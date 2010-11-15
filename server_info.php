@@ -31,7 +31,7 @@
  
  header( "Content-Type: text/plain" );
  
-print "server.version = 2\n";
+print "server.version = 3\n";
 print "ap.min.supported.version = 1\n";
 print "ap.latest.version = 1\n";
  
