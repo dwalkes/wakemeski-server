@@ -22,6 +22,7 @@ done
 LOCATIONS="
 	nwac_report.php?location=OSOALP
 	utah_report.php?location=ATA
+	id_sunvalley_report.php?location=SV
 	nm_report.php?location=SA
 	co_report.php?location=PG
 	co_report2.php?location=VA
