@@ -55,6 +55,9 @@ function find_uniques($hits)
 			$ids[$key] = 0;
 		$ids[$key] += 1;
 
+		if( $_GET['ignoreNA'] && $key == "n/a" )
+			continue;
+
 		$key = $hit->page;
 		if( ! isset($pages[$key]) )
 			$pages[$key] = 0;
@@ -73,9 +76,6 @@ $file = './hits_log';
 $hits = parse_hits_log($file);
 
 list($ids, $pages, $resorts) = find_uniques($hits);
-print("Uniques IDs: ".count($ids)."\n");
-foreach($ids as $id=>$hits)
-	print("\t$id:\t$hits hits\n");
 
 print("Pages: ".count($pages)."\n");
 foreach($pages as $page=>$hits)
@@ -84,4 +84,8 @@ foreach($pages as $page=>$hits)
 print("Resorts: ".count($resorts)."\n");
 foreach($resorts as $resort=>$hits)
 	print("\t$resort:\t$hits hits\n");
+
+print("Uniques IDs: ".count($ids)."\n");
+foreach($ids as $id=>$hits)
+	print("\t$id:\t$hits hits\n");
 ?>
