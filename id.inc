@@ -9,6 +9,9 @@ function region_create_id()
 			create_loc('Sun Valley',     'id_sunvalley_report.php',
 			           'SV', 43.682739, -114.403404,
 			           'http://www.sunvalley.com/mountain/weather/'),
+			create_loc('Brundage',       'id_brundage_report.php',
+			           'BD', 45.005122, -116.155937 ,
+			           'http://www.brundage.com/the-mountain/snow-report/'),
 		));
 }
 
