@@ -35,7 +35,8 @@ header( "Content-Type: text/plain" );
 	$resorts = resorts_eu_get();
 	$resort = resort_get_location($resorts, $location);
 
-	$resort->fresh_source_url = $resort->info;
+	if( $resort->data )
+		$resort->info = $resort->data;
 		
 	$cache_file = 'eu_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
@@ -50,10 +51,16 @@ header( "Content-Type: text/plain" );
 
 function write_report($resort, $cache_file)
 {
-	$report = get_report($resort->info);
+	$report = get_report($resort->fresh_source_url);
 	if( $report )
 	{
 		$props = get_report_props($resort->fresh_source_url, $report);
+
+		if( $resort->lat > 0 )
+		{
+			$props['location.latitude'] = $resort->lat;
+			$props['location.longitude'] = $resort->lon;
+		}
 		cache_create($resort, $cache_file, $props);
 	}
 }
