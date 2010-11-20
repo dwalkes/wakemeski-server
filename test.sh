@@ -27,8 +27,9 @@ LOCATIONS="
 	nm_report.php?location=SA
 	co_report.php?location=PG
 	co_report2.php?location=VA
-	mt_report.php?location=BS
+	mt_report.php?location=WF
 	eu_report.php?location=fchm
+	eu_report.php?location=spce
 "
 
 #required properties to ensure get reported

@@ -80,8 +80,8 @@ function get_report($resort)
 	$date = grep_grep("/Date of Report:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+\/\d+\/\d+)/", $contents);
 	$time = grep_grep("/Time Reported:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+:\d+:\d+)/", $contents);
 
-	$new = grep_grep("/Snow In Last 24 hrs:<\/b><\/td>(.*?)<\/td>/", "/(\d+)\"/", $contents);
-	$night = grep_grep("/New Snow Overnight:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)\"/", $contents);
+	$new = grep_grep("/Snow In Last 24 hrs:<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
+	$night = grep_grep("/New Snow Overnight:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
 
 	$surface = grep_grep("/<b>Surface:\s+<\/b><\/td>(.*?)<\/tr>/", "/>(.*?)<\/td>/", $contents);
 	$temp = grep_grep("/Temperature:\s+<\/b><\/td>(.*?)<\/tr>/", "/>\s+(\d+)/", $contents);
