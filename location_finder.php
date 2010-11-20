@@ -47,6 +47,7 @@ $regions = array(
 	region_create_ut(),
 	region_create_wa(),
 	region_create_france(),
+	region_create_spain(),
 	region_create_switzerland()
 );
 
