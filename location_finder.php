@@ -35,6 +35,7 @@ require('nv.inc');
 require('nwac.inc');
 require('ut.inc');
 require('eu.inc');
+require('vt.inc');
 
 $regions = array(
 	region_create_co(),
@@ -46,6 +47,7 @@ $regions = array(
 	region_create_or(),
 	region_create_ut(),
 	region_create_wa(),
+	region_create_vt(),
 	region_create_france(),
 	region_create_spain(),
 	region_create_switzerland()
