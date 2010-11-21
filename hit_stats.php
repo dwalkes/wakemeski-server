@@ -42,6 +42,7 @@ function parse_hits_log($file)
 //  item0: { 'id'=>'count' }
 //  item1: { 'page'=>'count'}
 //  item2: { 'resort'=>'count' }
+//  item3: { 'location_finder'=>'count'}
 function find_uniques($hits)
 {
 	$ids = array();
@@ -63,21 +64,31 @@ function find_uniques($hits)
 		$pages[$key] += 1;
 
 		$key = $hit->page."/".$hit->location;
-		if( ! isset($resort[$key]) )
-			$resort[$key] = 0;
-		$resort[$key] += 1;
+		if( strstr($hit->page, 'location_finder.php') )
+		{
+			if( ! isset($location[$key]) )
+				$location[$key] = 0;
+			$location[$key] += 1;
+		}
+		else
+		{
+			if( ! isset($resort[$key]) )
+				$resort[$key] = 0;
+			$resort[$key] += 1;
+		}
 	}
 
-	return array($ids, $pages, $resort);
+	return array($ids, $pages, $resort, $location);
 }
 
 $file = './hits_log';
 $hits = parse_hits_log($file);
 
-list($ids, $pages, $resorts) = find_uniques($hits);
+list($ids, $pages, $resorts, $locations) = find_uniques($hits);
 arsort($ids);
 arsort($pages);
 arsort($resorts);
+arsort($locations);
 ?>
 <html>
 <head>
@@ -91,6 +102,15 @@ arsort($resorts);
 <?php
 	foreach($pages as $page=>$hits)
 		print("<tr><td>$page</td><td>$hits</td></tr>\n"); 
+?>
+</table>
+
+<h2>Location Finder Hits: <?php print(count($locations)) ?></h2>
+<table>
+	<tr><th>Location</th><th>Hits</th></tr>
+<?php
+	foreach($locations as $loc=>$hits)
+		print("<tr><td>$loc</td><td>$hits</td></tr>\n"); 
 ?>
 </table>
 
