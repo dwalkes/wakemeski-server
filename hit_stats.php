@@ -1,5 +1,4 @@
 <?php
-header( "Content-Type: text/plain" );
 
 function create_hit($line)
 {
@@ -76,16 +75,43 @@ $file = './hits_log';
 $hits = parse_hits_log($file);
 
 list($ids, $pages, $resorts) = find_uniques($hits);
-
-print("Pages: ".count($pages)."\n");
-foreach($pages as $page=>$hits)
-	print("\t$page:\t$hits hits\n");
-
-print("Resorts: ".count($resorts)."\n");
-foreach($resorts as $resort=>$hits)
-	print("\t$resort:\t$hits hits\n");
-
-print("Uniques IDs: ".count($ids)."\n");
-foreach($ids as $id=>$hits)
-	print("\t$id:\t$hits hits\n");
+arsort($ids);
+arsort($pages);
+arsort($resorts);
 ?>
+<html>
+<head>
+	<title>Hit Statistics</title>
+</head>
+<body>
+
+<h2>Pages Hit: <?php print(count($pages)) ?></h2>
+<table>
+	<tr><th>Page</th><th>Hits</th></tr>
+<?php
+	foreach($pages as $page=>$hits)
+		print("<tr><td>$page</td><td>$hits</td></tr>\n"); 
+?>
+</table>
+
+<h2>Resort Hits: <?php print(count($resorts)) ?></h2>
+<table>
+	<tr><th>Resort</th><th>Hits</th></tr>
+<?php
+	foreach($resorts as $resort=>$hits)
+		print("<tr><td>$resort</td><td>$hits</td></tr>\n"); 
+?>
+</table>
+
+<h2>Unique Users: <?php print(count($ids)) ?></h2>
+<table>
+	<tr><th>ID</th><th>Hits</th></tr>
+<?php
+	foreach($ids as $user=>$hits)
+		print("<tr><td>$user</td><td>$hits</td></tr>\n"); 
+?>
+</table>
+
+</body>
+</html>
+
