@@ -52,19 +52,7 @@ function write_report($resort, $cache_file)
 		cache_create($resort, $cache_file, $report);
 }
 
-/**
- * Does a two-phase grep of the data to find in the report
- */
-function grep_grep($exp1, $exp2, $data)
-{
-	if( !preg_match_all($exp1, $data, $m1, PREG_OFFSET_CAPTURE) )
-		return false;
 
-	if( !preg_match_all($exp2, $m1[1][0][0], $m2, PREG_OFFSET_CAPTURE) )
-		return false;
-
-	return trim($m2[1][0][0]);
-}
 
 /**
  * Grabs the RSS feed turns the values for the given report into a hash of:
@@ -80,34 +68,44 @@ function get_report($resort)
 	$date = grep_grep("/Date of Report:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+\/\d+\/\d+)/", $contents);
 	$time = grep_grep("/Time Reported:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+:\d+:\d+)/", $contents);
 
-	$new = grep_grep("/Snow In Last 24 hrs:<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
-	$night = grep_grep("/New Snow Overnight:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
+	$new = grep_grep_int("/Snow In Last 24 hrs:<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
+	$night = grep_grep_int("/New Snow Overnight:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
 
 	$surface = grep_grep("/<b>Surface:\s+<\/b><\/td>(.*?)<\/tr>/", "/>(.*?)<\/td>/", $contents);
-	$temp = grep_grep("/Temperature:\s+<\/b><\/td>(.*?)<\/tr>/", "/>\s+(\d+)/", $contents);
+	$temp = grep_grep_int("/Temperature:\s+<\/b><\/td>(.*?)<\/tr>/", "/>\s+(\d+)/", $contents);
 
-	$d_top = grep_grep("/Summit Depth:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
-	$d_low = grep_grep("/Lower Mountain Depth:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
-	$lifts = grep_grep("/Lifts Open:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
+	$d_top = grep_grep_int("/Summit Depth:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
+	$d_low = grep_grep_int("/Lower Mountain Depth:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
+	$lifts = grep_grep_int("/Lifts Open:\s+<\/b><\/td>(.*?)<\/td>/", "/(\d+)/", $contents);
 
 	$report = array();
 	$report['date'] = $time." ".$date;
 
-	if($night)
+	if(int_found($night))
 	{
 		$report['snow.fresh'] = $night;
 		$report['snow.daily'] = "Fresh($night) ";
+	} 
+	else if(int_found($new))
+	{
+		/*
+		* Some resorts don't report fresh snow, only 24 hour.  Use this if night snow is not found
+		*/
+		$report['snow.fresh'] = $new;
 	}
-	if($new)
+
+	if( int_found($new) ) 
+	{
 		$report['snow.daily'] .= "24hr($new)"; 
+	}
 	$report['snow.units'] = 'inches';
 
-	if($d_low)
+	if( int_found($d_low))
 		$report['snow.total'] = $d_low." ";
-	if($d_top)
+	if( int_found($d_top))
 		$report['snow.total'] .= $d_top;
 
-	if($temp)
+	if( int_found($temp))
 		$report['temp.readings'] = $temp;
 
 	if($surface)
