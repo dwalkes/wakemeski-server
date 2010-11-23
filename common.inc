@@ -28,6 +28,7 @@
 
 require_once('weather.inc');
 
+
 /**
  * Uses the regular expression to find a value. if the value isn't found
  * the value "n/a" will be returned
@@ -43,6 +44,41 @@ function find_int($regex, $text)
 	return $matches[1][0][0];
 }
 
+/**
+ * Does a two-phase grep of the data to find in the report
+ * Finds any general value
+ */
+function grep_grep($exp1, $exp2, $data)
+{
+	if( !preg_match_all($exp1, $data, $m1, PREG_OFFSET_CAPTURE) )
+		return false;
+
+	if( !preg_match_all($exp2, $m1[1][0][0], $m2, PREG_OFFSET_CAPTURE) )
+		return false;
+
+	return trim($m2[1][0][0]);
+}
+
+/**
+* Does a two-phase grep of the data to find in the report
+* finds an integer value (sets to n/a if not found)
+*/
+function grep_grep_int($exp1, $exp2, $data)
+{
+	if( !preg_match_all($exp1, $data, $m1, PREG_OFFSET_CAPTURE) )
+		return false;
+
+	return find_int($exp2,$m1[1][0][0]);
+}
+
+/**
+* @return true if an integer value was found (including an integer
+* value of 0
+*/
+function int_found($int)
+{
+	return $int != 'n/a';
+}
 /**
  * Returns true if the given cache file is available
  * @param - age default of 7200=(2 hours in seconds)
