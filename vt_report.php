@@ -77,8 +77,7 @@ function get_resort_props($content)
 		return $props;
 	}
 
-	preg_match("/(\d+)&quot;(.*?)New in past 72 hrs/", $content, $matches);
-	$props['snow.fresh'] = $matches[1];
+	$props['snow.fresh'] = find_int("/(\d+)&quot;(.*?)New in past 72 hrs/", $content);
 	if( $props['snow.fresh'] > 0 )
 		$props['snow.daily'] = '72hr('.$matches[1].') ';
 
