@@ -130,15 +130,14 @@ td {
 <body>
 
 <h2>Page Usage</h2>
-<p>There are two parameters that can be passed to this page using the HTTP "get" values
+<p>There are two parameters that can be passed to this page using the HTTP "get" values</p>
 <ul>
 	<li><b>ignoreNA=y: </b>Ignores hits from automated code testing like test.sh</li>
 	<li><b>active=X: </b>Allows you to configure how many hits from a unique ID are required to be considerderd "active"</li>
 </ul>
 For example:<br/>
-<pre>hit_stats.php?ignoreNA=y&active=20</pre>
-Will display stats not counting "real" users. A user will only be counted as active if they've had more than 20 hits.
-</p>
+<pre>hit_stats.php?ignoreNA=y&amp;active=20</pre>
+<p>Will display stats not counting "real" users. A user will only be counted as active if they've had more than 20 hits.</p>
 
 <h2>Pages Hit: (<?php print(count($pages)) ?> Unique)</h2>
 <table>
