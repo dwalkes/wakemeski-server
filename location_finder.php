@@ -26,6 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+require('bc.inc');
 require('co.inc');
 require('id.inc');
 require('me.inc');
@@ -48,6 +49,8 @@ $regions = array(
 	region_create_ut(),
 	region_create_wa(),
 	region_create_vt(),
+//international
+	region_create_bc(),
 	region_create_france(),
 	region_create_spain(),
 	region_create_switzerland()
