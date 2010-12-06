@@ -77,9 +77,13 @@ function get_resort_props($content)
 		return $props;
 	}
 
-	$props['snow.fresh'] = find_int("/(\d+)&quot;(.*?)New in past 72 hrs/", $content);
+	if( preg_match("/class=\"value\">(\d+)&quot;(.*?)On\s+(\d+\/\d+)/", $content, $matches) )
+		$props['snow.fresh'] = $matches[1];
+	else
+		$props['snow.fresh'] = 'n/a';
+
 	if( $props['snow.fresh'] > 0 )
-		$props['snow.daily'] = '72hr('.$matches[1].') ';
+		$props['snow.daily'] = $matches[3].'('.$matches[1].') ';
 
 	if( preg_match("/Previous Snowfall:<\/span>\s+(\d+)&quot; on (.*?)</", $content, $matches) )
 		$props['snow.daily'] .= $matches[2].'('.$matches[1].')';
@@ -114,7 +118,7 @@ function get_location_content($resort)
 {
 	$contents = file_get_contents($resort->fresh_source_url);
 
-	preg_match_all("/<h3>($resort->name)<\/h3>/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	preg_match_all("/<h3>($resort->name)(.*?)<\/h3>/", $contents, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][1] !== false )
 	{
 		$start = $matches[1][0][1];
