@@ -1,0 +1,72 @@
+	Report Properties
+
+This describes the various properties that each report module may or may not
+report. We have a few properties we consider required and then there are a
+few that are optional. In addition, some properties may not yet be used by
+the client-side software:
+
+	Required Properies
+snow.fresh
+	The amount of "fresh" snow. The definition of "fresh" can vary from
+	resort to resort, but generally is the amount in the last 24 hrs.
+snow.daily
+	An array of recent snow fall measurements. This is usually reported
+	like: "24hr(1) 48hr(2)"
+snow.total
+	The total amount of snow on the mountain. This can be an array if
+	the resort reports values at the base and top
+snow.units
+	inches or cm
+date
+	The date the report was generated. This can be used to make sure we
+	aren't looking at a report that is outdated.
+weather.url
+	A URL to visit to get upcoming forecast information. For US resorts
+	this is on forecast.weather.gov.
+weather.icon
+	A string that describes an icon resort in the client side that can
+	be used to display a weather icon in the application.
+location
+	The internal resort code we use for the module.
+location.info
+	A URL to get information about the resort
+cache.found
+	Says whether or not the server picked up a cached copy of the report.
+	This is useful for debugging purposes.
+
+	Optional Properties
+snow.conditions
+	A few resorts will provide comments like "packed powder"
+location.comments
+	Some resorts have comments like "This Friday is bikini madness".
+location.latitude
+location.longitude
+	The geo coordinates of the resort. We use this to give a map link to
+	the resort. Its also used by US resorts to get the weather report
+	from forecast.weather.gov.
+lifts.open
+lifts.total
+	Used to desiginate things like "9 of 13 lifts open". NOTE: Some resorts
+	just report how many are open and not the total count.
+trails.percent_open
+trails.open
+trails.total
+	Similar to the lifts property. eu_report.php uses the percent_open
+	property rather than open or total.
+snow.making (not supported in client)
+	Some resorts indicate whether or not they are making snow
+weather.forecast.when.<index>
+weather.forecast.desc.<index>
+weather.forecast.when-exact.<index> (not supported in client)
+	This allows us to give weather forecast to the client. We report an
+	array of these, so the index field is needed. The "when" is a readable
+	label. The "desc" is the actual report information.
+	when-exact is going to be used to help a feature for predicting and
+	alerting when it will snow.
+wind.avg
+	Can be an array of average wind speeds reported at the resort.
+temp.readings
+	Can be an array of temperatures recorded at the resort.
+details.url
+	Can provide a link to a more detailed view of the the snow report
+	data.
