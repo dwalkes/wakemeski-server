@@ -110,7 +110,7 @@ function get_icon($ca_val)
 		case '06': //chance of showers
 			return 'scttsra';
 		case '08': //chance of flurries (day)
-			return 'snow';
+			return 'sn';
 		case '10':
 			return 'cloudy';
 		case '12': //chance of rain
@@ -118,7 +118,7 @@ function get_icon($ca_val)
 		case '16': //chance of flurries
 		case '17':
 		case '18':
-			return 'snow';
+			return 'sn';
 		case '16':
 			return 'mix';
 		case '30': //clear night
