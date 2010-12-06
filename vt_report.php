@@ -59,6 +59,43 @@ function write_report($resort, $cache_file)
 }
 
 /**
+ * fresh can be a single value like:
+ *  3" on 11/12
+ * or a range:
+ *  3-5" on 11/12
+ */
+function find_fresh($props, $content)
+{
+	if( preg_match("/class=\"value\">(\d+)&quot;(.*?)On\s+(\d+\/\d+)/", $content, $matches) )
+	{
+		$props['snow.fresh'] = $matches[1];
+		$props['snow.daily'] = $matches[3].'('.$matches[1].') ';
+	}
+	else if( preg_match("/class=\"value\">(\d+) - (\d+)&quot;(.*?)On\s+(\d+\/\d+)/", $content, $matches) )
+	{
+		$props['snow.fresh'] = $matches[2];
+		$props['snow.daily'] = $matches[4].'('.$matches[1].') ';
+	}
+	else
+	{
+		$props['snow.fresh'] = 'n/a';
+	}
+}
+
+/**
+ * Finds daily values. Its similar to find_fresh because it deals with ranges
+ */
+function find_daily($props, $content)
+{
+	if( preg_match("/Previous Snowfall:<\/span>\s+(\d+)&quot; on (.*?)</", $content, $matches) )
+		$props['snow.daily'] .= $matches[2].'('.$matches[1].')';
+	else if( preg_match("/Previous Snowfall:<\/span>\s+(\d+)\s+-\s+(\d+)&quot; on (.*?)</", $content, $matches) )
+		$props['snow.daily'] .= $matches[3].'('.$matches[2].')';
+	else if( !array_key_exists($props['snow.daily']) )
+		$props['snow.daily'] = 'n/a';
+}
+
+/**
  * Takes the resort HTML's content and builds its properties
  */
 function get_resort_props($content)
@@ -77,16 +114,8 @@ function get_resort_props($content)
 		return $props;
 	}
 
-	if( preg_match("/class=\"value\">(\d+)&quot;(.*?)On\s+(\d+\/\d+)/", $content, $matches) )
-		$props['snow.fresh'] = $matches[1];
-	else
-		$props['snow.fresh'] = 'n/a';
-
-	if( $props['snow.fresh'] > 0 )
-		$props['snow.daily'] = $matches[3].'('.$matches[1].') ';
-
-	if( preg_match("/Previous Snowfall:<\/span>\s+(\d+)&quot; on (.*?)</", $content, $matches) )
-		$props['snow.daily'] .= $matches[2].'('.$matches[1].')';
+	find_fresh(&$props, $content);
+	find_daily(&$props, $content);		
 
 	$props['snow.total'] = find_int("/Average Base:<\/span>\s+(\d+)/", $content);
 
@@ -107,6 +136,9 @@ function get_resort_props($content)
 
 	if( preg_match("/Base Temp:<\/span>\s+(\d+)/", $content, $matches) )
 		$props['temp.readings'] = $matches[1];
+
+	if( preg_match("/Snowmaking:<\/span> Yes/", $content, $matches) )
+		$props['snow.making'] = 1;
 
 	return $props;
 }
