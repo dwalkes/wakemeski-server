@@ -31,6 +31,7 @@ LOCATIONS="
 	eu_report.php?location=fchm
 	eu_report.php?location=spce
 	vt_report.php?location=KR
+	bc_whistler_report.php?location=WH
 "
 
 #required properties to ensure get reported
