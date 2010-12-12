@@ -34,6 +34,8 @@ header( "Content-Type: text/plain" );
 
 	$resorts = resorts_bc_get();
 	$resort = resort_get_location($resorts, $location);
+
+	$resort->fresh_source_url = $resort->data;
 	
 	$cache_file = 'bc_'.$location.'.txt';
 	$found_cache = cache_available($cache_file);
@@ -44,14 +46,14 @@ header( "Content-Type: text/plain" );
 
 	cache_dump($cache_file, $found_cache);
 
-	log_hit('bc_whistler_report.php', $location, $found_cache);
+	log_hit('bc_revelstoke_report.php', $location, $found_cache);
 
 function write_report($resort, $cache_file)
 {
 	$content = get_report($resort);
 	if( $content )
 	{
-		$props = get_report_props($content);
+		$props = get_report_props($resort, $content);
 		cache_create($resort, $cache_file, $props);
 	}
 }
@@ -59,85 +61,81 @@ function write_report($resort, $cache_file)
 /**
  * Takes the report's HTML and parse the information out into a hashtable
  */
-function get_report_props($report)
+function get_report_props($resort, $report)
 {
 	$props = array();
 
 	$props['snow.units'] = 'cm';
 
-	preg_match("/Last Updated:\s+(.*?)</", $report, $matches);
-	//this string can have odd padding in between words, so stript it off
-	$fields = preg_split("/\s+/", $matches[1]);
-	$props['date'] = implode(' ', $fields);
+	$props['details.url'] = $resort->fresh_source_url;
 
-	preg_match("/lline\">(\d+) cm(.*?)(\d+) cm(.*?)(\d+) cm(.*?)(\d+)/", $report, $matches);
-	$new  = $matches[1];
-	$hr24 = $matches[3];	
-	$hr48 = $matches[5];	
-	$week = $matches[7];	
+	preg_match("/updated (.*?)</", $report, $matches);
+	$props['date'] = $matches[1];
+
+	$new = find_int("/Overnight(.*?)(\d+)\s+cm/", $report, 2);
+	$hr24 = find_int("/Last 24 Hours(.*?)(\d+)\s+cm/", $report, 2);
+	$hr48 = find_int("/Last 48 Hours(.*?)(\d+)\s+cm/", $report, 2);
+	$week = find_int("/Last 7 Days(.*?)(\d+)\s+cm/", $report, 2);
 
 	$props['snow.fresh'] = $hr24;
 	$props['snow.daily'] = "Fresh($new) 24hr($hr24) 48hr($hr48) week($week)";
 
-	$props['snow.total'] = find_int("/colspan=\"2\">(\d+)/", $report);
+	$props['snow.total'] = find_int("/Base Depth(.*?)(\d+)\s+cm/", $report, 2);
 
-	preg_match("/Peak<(.*?)width=\"25%\">(.*?)&deg;/", $report, $matches);
-	$tempPeak = $matches[2];
-	preg_match("/Village<\/td><td>(.*?)&deg;/", $report, $matches);
-	$tempVillage = $matches[1];
-	$props['temp.readings'] = $tempVillage.' '.$tempPeak;
+	$props['temp.readings'] = find_int("/Mountain Top Temp: <\/strong>&nbsp;(.*?)C/", $report);
+	
+	if( preg_match("/Runs Open:(.*?)(\d+)\/(\d+)/", $report, $matches) )
+	{
+		$props['trails.open'] = $matches[2];
+		$props['trails.total'] = $matches[3];
+	}
 
 	get_weather_props(&$props);	
 
 	return $props;
 }
 
-
-
-function get_weather_interval($idx, $label, $offset, $props, $contents)
-{
-	$props['forecast.when.'.$idx] = $label;
-
-	//move to the offset for this forecast
-	$contents = substr($contents, $offset);
-
-	if($idx == 1)
-	{
-		preg_match("/weathericons\/(.*?).gif/", $contents, $matches);
-		$props['weather.icon'] = bc_get_weather_icon($matches[1]);
-	}
-
-	preg_match("/title='(.*?)'>/", $contents, $matches);
-	$props['forecast.desc.'.$idx] = $matches[1];
-}
-
 function get_weather_props($props)
 {
-	$props['weather.url'] = "http://movement.whistlerblackcomb.com/cache/whistler_fx.php";
+	$props['weather.url'] = "http://www.weatheroffice.gc.ca/city/pages/bc-65_metric_e.html";
+	$report = get_weather_report($props);
+
+	get_weather_icon($report, &$props);
+
+	//remove the contents up to the actual weather so that we can get
+	//the proper list:
+	$report = strstr($report, "<div class=\"fdetails\">");
+
+	preg_match_all("/<dt>(.*?)<\/dt>\s+<dd>(.*?)<\/dd>/", $report, $matches);
+
+	for($i = 0; $i < 3; $i++)
+	{
+		$props['forecast.when.'.($i+1)] = $matches[1][$i];
+		$props['forecast.desc.'.($i+1)] = $matches[2][$i];
+	}
+}
+
+function get_weather_icon($report, $props)
+{
+	if(preg_match("/id=\"currentimg\" src=\"\/weathericons\/(.*?).gif/", $report, $matches) )
+		$props['weather.icon'] = bc_get_weather_icon($matches[1]);
+}
+
+function get_weather_report($props)
+{
 	$contents = file_get_contents($props['weather.url']);
-
-	//get the text to parse
-	$idx1 = strpos($contents, "<table width='100%' cellpadding='0' cellspacing='0' class='icons' >");
-	$idx2 = strpos($contents, "</table>", $idx1);
-	$contents = substr($contents, $idx1, $idx2-$idx1);
-
-	//split this up based on each interval (ie Sunday, Monday, Tuesday)
-	// keep the offset's so we can parse the actual report
-	preg_match_all("/<span class='titleS'>(.*?)<\/span>/", $contents, $matches, PREG_OFFSET_CAPTURE);
-
-	get_weather_interval(1, $matches[1][0][0], $matches[1][0][1], &$props, $contents);
-	get_weather_interval(2, $matches[1][1][0], $matches[1][1][1], &$props, $contents);
-	get_weather_interval(3, $matches[1][2][0], $matches[1][2][1], &$props, $contents);
+	
+	//its easier to parse if one line
+	return str_replace("\n", "\t", $contents);
 }
 
 function get_report($resort)
 {
 	$contents = file_get_contents($resort->fresh_source_url);
 
-	//strip off some the junk we don't need
-	$contents = strstr($contents, "Last Updated");
-	$idx = strpos($contents, "Environment Canada Forecast");
-	return(substr($contents, 0, $idx));
+	//the report has fields we grep for that span lines, so remove
+	//EOL's so regex's will work easily
+	return str_replace("\n", "\t", $contents);
 }
 
 ?>

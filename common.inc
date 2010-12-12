@@ -31,17 +31,19 @@ require_once('weather.inc');
 
 /**
  * Uses the regular expression to find a value. if the value isn't found
- * the value "n/a" will be returned
+ * the value "n/a" will be returned.
+ * 
+ * matchidx can be used if the regex has more than one matching pattern
  */
-function find_int($regex, $text)
+function find_int($regex, $text, $matchidx=1)
 {
 	if( !preg_match_all($regex, $text, $matches, PREG_OFFSET_CAPTURE) )
 		return 'n/a';
 
-	if( $matches[1][0][0] === FALSE )
+	if( $matches[$matchidx][0][0] === FALSE )
 		return 'n/a';
 
-	return $matches[1][0][0];
+	return $matches[$matchidx][0][0];
 }
 
 /**
