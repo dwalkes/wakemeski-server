@@ -7,7 +7,7 @@ function region_create_bc()
 	return create_region("British Columbia",
 		array(
 			create_loc('Whistler',     'bc_whistler_report.php',
-			           'WH', 50, 122,
+			           'WH', 50, -122,
 			           'http://www.whistlerblackcomb.com/weather/snowreport/index.htm'),
 			create_loc('Revelstoke',   'bc_revelstoke_report.php',
 			           'RS', 50.954167, -118.154167,
@@ -42,7 +42,7 @@ function bc_get_weather_icon($ca_val)
 		case '08': //chance of flurries (day)
 			return 'sn';
 		case '10':
-			return 'cloudy';
+			return 'ovc';
 		case '12': //chance of rain
 			return 'ra';
 		case '16': //chance of flurries
@@ -54,7 +54,7 @@ function bc_get_weather_icon($ca_val)
 		case '30': //clear night
 			return 'nskc';
 		case '37': //night cloudy
-			return 'cloudy';
+			return 'ovc';
 	}
 	
 	return $ca_val;

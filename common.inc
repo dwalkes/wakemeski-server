@@ -124,6 +124,12 @@ function cache_create($resort, $file, $report)
 
 			if( !isset($report['weather.url']) )
 				Weather::set_props($resort->lat, $resort->lon, &$report);
+			
+			if( !isset($report['location.latitude']) && $resort->lat >0)
+			{
+				$report['location.latitude'] = $resort->lat; 
+				$report['location.longitude'] = $resort->lon;
+			}		
 
 			$keys = array_keys($report);
 			for($i = 0; $i < count($keys); $i++)

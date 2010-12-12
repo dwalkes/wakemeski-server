@@ -96,7 +96,7 @@ function get_report_props($report)
 
 function get_weather_interval($idx, $label, $offset, $props, $contents)
 {
-	$props['forecast.when.'.$idx] = $label;
+	$props['weather.forecast.when.'.$idx] = $label;
 
 	//move to the offset for this forecast
 	$contents = substr($contents, $offset);
@@ -108,7 +108,7 @@ function get_weather_interval($idx, $label, $offset, $props, $contents)
 	}
 
 	preg_match("/title='(.*?)'>/", $contents, $matches);
-	$props['forecast.desc.'.$idx] = $matches[1];
+	$props['weather.forecast.desc.'.$idx] = $matches[1];
 }
 
 function get_weather_props($props)
@@ -125,9 +125,9 @@ function get_weather_props($props)
 	// keep the offset's so we can parse the actual report
 	preg_match_all("/<span class='titleS'>(.*?)<\/span>/", $contents, $matches, PREG_OFFSET_CAPTURE);
 
-	get_weather_interval(1, $matches[1][0][0], $matches[1][0][1], &$props, $contents);
-	get_weather_interval(2, $matches[1][1][0], $matches[1][1][1], &$props, $contents);
-	get_weather_interval(3, $matches[1][2][0], $matches[1][2][1], &$props, $contents);
+	get_weather_interval(0, $matches[1][0][0], $matches[1][0][1], &$props, $contents);
+	get_weather_interval(1, $matches[1][1][0], $matches[1][1][1], &$props, $contents);
+	get_weather_interval(2, $matches[1][2][0], $matches[1][2][1], &$props, $contents);
 }
 
 function get_report($resort)
