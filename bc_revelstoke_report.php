@@ -110,8 +110,8 @@ function get_weather_props($props)
 
 	for($i = 0; $i < 3; $i++)
 	{
-		$props['forecast.when.'.($i+1)] = $matches[1][$i];
-		$props['forecast.desc.'.($i+1)] = $matches[2][$i];
+		$props['weather.forecast.when.'.$i] = $matches[1][$i];
+		$props['weather.forecast.desc.'.$i] = $matches[2][$i];
 	}
 }
 
