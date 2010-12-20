@@ -56,6 +56,7 @@ function write_report($resort, $cache_file)
 	{
 		$props = get_report_props($resort->fresh_source_url, $report);
 
+		//override what we may have parsed from the resort
 		if( $resort->lat > 0 )
 		{
 			$props['location.latitude'] = $resort->lat;
@@ -113,6 +114,11 @@ function get_report_props($url, $report)
 	preg_match_all("/reported (.*?)\.<\/p>/", $report, $matches, PREG_OFFSET_CAPTURE);
 	$props['date'] = date('d M', strtotime($matches[1][0][0]));
 
+	if( preg_match("/property=\"og:latitude\" content=\"(.*?)\"/", $report, $matches))
+		$props['location.latitude'] = $matches[1];
+	if( preg_match("/property=\"og:longitude\" content=\"(.*?)\"/", $report, $matches))
+		$props['location.longitude'] = $matches[1];
+
 	preg_match_all("/<p><a href=\"(.*?)\.html/", $report, $matches, PREG_OFFSET_CAPTURE);	
 	$page = $matches[1][0][0].".html";
 	//this gives us chamonix_snow-forecast.html, now pull the base from the
@@ -128,8 +134,7 @@ function get_report_props($url, $report)
 
 function get_report($url)
 {
-//	return file_get_contents($url);
-return file_get_contents("http://www.j2ski.mobi/austria/molltal_gletscher_flattach_snow-report.html");
+	return file_get_contents($url);
 }
 
 function get_weather_icon($url)
