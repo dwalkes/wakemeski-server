@@ -92,23 +92,28 @@ function get_report_props($url, $report)
 			$fresh = "0";
 		}
 	}
-	
-	
+
 	$props['snow.daily'] = "Fresh(".$fresh."cm)";
 	$props['snow.fresh'] = $fresh;
 	$props['snow.units'] = 'cm';
 
-	// Area open is reported as %
-	preg_match_all("/<th>Area Open<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE);
-	$props['trails.percent.open'] = $matches[1][0][0];
+	// Lifts open is reported as %
+	if( preg_match_all("/<th>Lifts Open<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE) )
+		$props['lifts.percent.open'] = $matches[1][0][0];
 
-	preg_match_all("/<th>Conditions<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE);
+	//some places report "Pistes Open". Some do "area open"
+	if( preg_match_all("/<th>Pistes Open<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE) )
+		$props['trails.open'] = $matches[1][0][0];
+	if( preg_match_all("/<th>Area Open<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE) )
+		$props['trails.percent.open'] = $matches[1][0][0];
+
+	preg_match_all("/<th>Snow<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE);
 	$props['snow.conditions'] = $matches[1][0][0];
 
-	preg_match_all("/<th>Reported<\/th><td>(.*?)<\/td>/", $report, $matches, PREG_OFFSET_CAPTURE);
-	$props['date'] = date('d M Y', strtotime($matches[1][0][0]));
+	preg_match_all("/reported (.*?)\.<\/p>/", $report, $matches, PREG_OFFSET_CAPTURE);
+	$props['date'] = date('d M', strtotime($matches[1][0][0]));
 
-	preg_match_all("/<p><a href=\"(.*?)\.html/", $report, $matches, PREG_OFFSET_CAPTURE);
+	preg_match_all("/<p><a href=\"(.*?)\.html/", $report, $matches, PREG_OFFSET_CAPTURE);	
 	$page = $matches[1][0][0].".html";
 	//this gives us chamonix_snow-forecast.html, now pull the base from the
 	//report's url
@@ -123,7 +128,8 @@ function get_report_props($url, $report)
 
 function get_report($url)
 {
-	return file_get_contents($url);
+//	return file_get_contents($url);
+return file_get_contents("http://www.j2ski.mobi/austria/molltal_gletscher_flattach_snow-report.html");
 }
 
 function get_weather_icon($url)
