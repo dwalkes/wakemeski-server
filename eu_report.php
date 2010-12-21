@@ -127,7 +127,7 @@ function get_report_props($url, $report)
 	$base = substr($url, 0, $idx);
 	$props['weather.url'] = $base."/".$page;
 
-	$props['weather.icon'] = get_weather_icon($props['weather.url']);
+	get_weather(&$props);
 
 	return $props;
 }
@@ -137,12 +137,11 @@ function get_report($url)
 	return file_get_contents($url);
 }
 
-function get_weather_icon($url)
+//parses the europe description and turns it into what we have coded
+//in the android client (which was based on weather.gov)
+function get_icon($condition)
 {
-	$weather = get_report($url);
-	preg_match_all("/<img alt=\"(.*?)\"/", $weather, $matches, PREG_OFFSET_CAPTURE);
-
-	switch(strtolower($matches[1][0][0]))
+	switch(strtolower($condition))
 	{
 		case 'sunny/clear':
 			return 'skc';
@@ -161,7 +160,88 @@ function get_weather_icon($url)
 		case 'rain':
 			return 'ra';
 	}
-	return $matches[1][0][0];
+	return "unknown";
+}
+
+function get_prop_array($weather, $prop)
+{
+	if( preg_match_all("/<th>$prop<\/th><td.*?>(.*?)<\/td><td.*?>(.*?)<\/td><td.*?>(.*?)<\/td><td.*?>(.*?)<\/td><\/tr>/", $weather, $matches) )
+	{
+		$props[0] = $matches[1][0];
+		$props[1] = $matches[2][0];
+		$props[2] = $matches[3][0];
+		$props[3] = $matches[4][0];
+
+		return $props;
+	}
+}
+
+function get_temp_array($weather, $prop)
+{
+	$props = get_prop_array($weather, $prop);
+	if( $props )
+	{
+		for($i = 0; $i < count($props); $i++ )
+			$props[$i] = str_replace("&deg;", "", $props[$i]);
+		return $props;
+	}
+}
+
+function get_snow_array($weather, $prop)
+{
+	$props = get_prop_array($weather, $prop);
+	if( $props )
+	{
+		for($i = 0; $i < count($props); $i++ ) {
+			$props[$i] = str_replace("-", "0", $props[$i]);
+			$props[$i] = str_replace("cm", "", $props[$i]);
+		}
+		return $props;
+	}
+}
+
+function generate_forecast($min, $max,
+                           $wind, $wind_dir, 
+                           $snow_low, $snow_high, $snow_level)
+{
+	$forecast = "Low of $min with a high $max. ";
+	if( $wind > 0 )
+		$forecast .= "Winds blowing around $wind km/h from the $wind_dir. ";
+
+	if( $snow_high > 0 )
+		$forecast .= "New snow accumulation of $snow_low to $snow_high cm at $snow_level meters possible.";
+	return strip_tags($forecast);
+}
+
+function get_weather($props)
+{
+	$weather = get_report($props['weather.url']);
+
+	preg_match_all("/<th>4-Day Snow Forecast<\/th><th>(.*?)<\/th><th>(.*?)<\/th><th>(.*?)<\/th><th>(.*?)<\/th><\/tr>/", $weather, $matches);
+	$day[0] = $matches[1][0];
+	$day[1] = $matches[2][0];
+	$day[2] = $matches[3][0];
+	$day[3] = $matches[4][0];
+
+	$min = get_temp_array($weather, "Min");
+	$max = get_temp_array($weather, "Max");
+	$wind_dir = get_prop_array($weather, "Wind Dir");
+	$wind = get_prop_array($weather, "Wind km\/h");
+
+	$snow_high = get_snow_array($weather, "Snow Hi");
+	$snow_low = get_snow_array($weather, "Snow Lo");
+	$snow_level = get_snow_array($weather, "Snow to");
+
+	for($i = 0; $i < 4; $i++)
+	{
+		$props['weather.forecast.when.'.$i] = $day[$i];
+		$props['weather.forecast.when-exact.'.$i] = strtotime($day[$i]);
+		$props['weather.forecast.desc.'.$i] = 
+			generate_forecast($min[$i], $max[$i], $wind[$i], $wind_dir[$i], $snow_low[$i], $snow_high[$i], $snow_level[$i]); 
+	}
+
+	preg_match_all("/<img alt=\"(.*?)\"/", $weather, $matches);
+	$props['weather.icon'] = get_icon($matches[1][0]);
 }
 
 ?>
