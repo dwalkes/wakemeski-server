@@ -82,9 +82,13 @@ class Weather
 
 		$forecast = array();
 
-		for( $i = 0; $i < 3; $i++ )
+		for( $i = 0; $i < 4; $i++ )
 		{
 			$forecast[$i]['when'] = $times->item($i)->getAttribute('period-name');
+			$range = $times->item($i)->textContent;
+			//strtotime is actually flexible enough to convert this into a 
+			//time in seconds
+			$forecast[$i]['when-exact'] = strtotime($range);
 			$forecast[$i]['desc'] = $descriptions->item($i)->textContent;
 		}
 
@@ -108,6 +112,7 @@ class Weather
 		for($i = 0; $i < count($forecast); $i++)
 		{
 			$props["weather.forecast.when.$i"] = $forecast[$i]['when'];
+			$props["weather.forecast.when-exact.$i"] = $forecast[$i]['when-exact'];
 			$props["weather.forecast.desc.$i"] = $forecast[$i]['desc'];
 		}
 	}
