@@ -97,6 +97,8 @@ function get_report_props($body)
 	$data['snow.units'] = 'inches';
 
 	$data['snow.total'] = find_int("/Base Snow Depth \(inches\): <b>(\d+)&quot;/", $body);
+	if( $data['snow.total'] == 'n/a')
+		$data['snow.total'] = find_int("/Base Snow Depth \(inches\): <b>(\d+)-(\d+)&quot;/", $body);
 
 	$data['trails.open'] = find_int("/Trails Open: <b>(\d+)/", $body);
 	$data['lifts.open']  = find_int("/Lifts Open: <b>(\d+)/", $body);

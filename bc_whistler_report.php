@@ -70,16 +70,17 @@ function get_report_props($report)
 	$fields = preg_split("/\s+/", $matches[1]);
 	$props['date'] = implode(' ', $fields);
 
-	preg_match("/lline\">(\d+) cm(.*?)(\d+) cm(.*?)(\d+) cm(.*?)(\d+)/", $report, $matches);
+	preg_match("/lline\">(\d+) cm(.*?)(\d+) cm(.*?)(\d+) cm(.*?)(\d+) cm(.*?)(\d+)/", $report, $matches);
 	$new  = $matches[1];
 	$hr24 = $matches[3];	
 	$hr48 = $matches[5];	
 	$week = $matches[7];	
+	$base = $matches[9];
 
 	$props['snow.fresh'] = $hr24;
 	$props['snow.daily'] = "Fresh($new) 24hr($hr24) 48hr($hr48) week($week)";
 
-	$props['snow.total'] = find_int("/colspan=\"2\">(\d+)/", $report);
+	$props['snow.total'] = $base;
 
 	preg_match("/Peak<(.*?)width=\"25%\">(.*?)&deg;/", $report, $matches);
 	$tempPeak = $matches[2];
@@ -136,7 +137,7 @@ function get_report($resort)
 
 	//strip off some the junk we don't need
 	$contents = strstr($contents, "Last Updated");
-	$idx = strpos($contents, "Environment Canada Forecast");
+	$idx = strpos($contents, ">Weather</div>");
 	return(substr($contents, 0, $idx));
 }
 

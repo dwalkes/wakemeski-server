@@ -59,6 +59,17 @@ function write_report($resort, $cache_file)
 }
 
 /**
+ * determines if the given date is recent enough to be considered "fresh"
+ */
+function is_fresh($date)
+{
+	$time = strtotime($date);
+	if( time() - $time < 60*60*24 ) //last 24 hours
+		return true;
+	return false;
+}
+
+/**
  * fresh can be a single value like:
  *  3" on 11/12
  * or a range:
@@ -68,12 +79,18 @@ function find_fresh($props, $content)
 {
 	if( preg_match("/class=\"value\">(\d+)&quot;(.*?)On\s+(\d+\/\d+)/", $content, $matches) )
 	{
-		$props['snow.fresh'] = $matches[1];
+		if( is_fresh($matches[3]) )
+			$props['snow.fresh'] = $matches[1];
+		else
+			$props['snow.fresh'] = "0";
 		$props['snow.daily'] = $matches[3].'('.$matches[1].') ';
 	}
-	else if( preg_match("/class=\"value\">(\d+) - (\d+)&quot;(.*?)On\s+(\d+\/\d+)/", $content, $matches) )
+	else if( preg_match("/class=\"value\">(\d+)-(\d+)&quot;(.*?)On\s+(\d+\/\d+)/", $content, $matches) )
 	{
-		$props['snow.fresh'] = $matches[2];
+		if( is_fresh($matches[4]) )
+			$props['snow.fresh'] = $matches[2];
+		else
+			$props['snow.fresh'] = "0";
 		$props['snow.daily'] = $matches[4].'('.$matches[1].') ';
 	}
 	else
@@ -128,16 +145,16 @@ function get_resort_props($content)
 		$props['lifts.total'] = $matches[2];
 	}
 
-	if( preg_match("/Trails Open:<\/span>\s+(\d+)\/(\d+)/", $content, $matches) )
+	if( preg_match("/Open Trails:<\/span>\s+(\d+)\/(\d+)/", $content, $matches) )
 	{
 		$props['trails.open'] = $matches[1];
 		$props['trails.total'] = $matches[2];
 	}
 
-	if( preg_match("/Base Temp:<\/span>\s+(\d+)/", $content, $matches) )
+	if( preg_match("/Base Temp at Noon:<\/span>\s+(\d+)/", $content, $matches) )
 		$props['temp.readings'] = $matches[1];
 
-	if( preg_match("/Snowmaking:<\/span> Yes/", $content, $matches) )
+	if( preg_match("/Snowmaking in past 24 hrs:<\/span> Yes/", $content, $matches) )
 		$props['snow.making'] = 1;
 
 	return $props;
