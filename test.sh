@@ -20,6 +20,7 @@ while getopts   "s:cv" optn; do
 done
 
 LOCATIONS="
+	wy_jh_report.php?location=JH
 	nwac_report.php?location=OSOALP
 	utah_report.php?location=ATA
 	id_sunvalley_report.php?location=SV
