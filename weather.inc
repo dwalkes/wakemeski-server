@@ -37,8 +37,14 @@ class Weather
 
 		$url = "http://forecast.weather.gov/MapClick.php?FcstType=dwml&lat=$lat&lon=$lon";
 		$xml = file_get_contents($url);
+		if( $xml == false )
+			return false;
 
+		//supress error messages
+		libxml_use_internal_errors(true);
 		$sxe = simplexml_load_string($xml);
+		if( $exe == false )
+			return false;
 		return dom_import_simplexml($sxe);
 	}
 
@@ -62,6 +68,8 @@ class Weather
 	static function get_report($lat, $lon)
 	{
 		$dom = Weather::_get_xml_dom($lat, $lon);
+		if( ! $dom )
+			return false;
 
 		//get the weather report URL
 		$node = $dom->getElementsByTagName('moreWeatherInformation')->item(0);
@@ -103,6 +111,11 @@ class Weather
 	static function set_props($lat, $lon, $props)
 	{
 		list($icon, $url, $forecast) = Weather::get_report($lat, $lon);
+		if( ! $icon )
+		{
+			$props['warn.msg'] = "unable to get weather";
+			return;
+		}
 
 		$props['location.latitude'] = $lat;
 		$props['location.longitude'] = $lon;
