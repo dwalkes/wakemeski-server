@@ -43,7 +43,7 @@ class Weather
 		//supress error messages
 		libxml_use_internal_errors(true);
 		$sxe = simplexml_load_string($xml);
-		if( $exe == false )
+		if( $sxe == false )
 			return false;
 		return dom_import_simplexml($sxe);
 	}

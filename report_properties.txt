@@ -35,6 +35,13 @@ cache.found
 	This is useful for debugging purposes.
 
 	Optional Properties
+err.msg
+	A description of what went wrong trying to create the report. If
+	this field exists, the ReportListAdapter in the UI will show the
+	report as having an error.
+warn.msg
+	A warning message. Just used for diagnostics. The UI currently
+	ignores it
 snow.conditions
 	A few resorts will provide comments like "packed powder"
 location.comments
