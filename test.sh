@@ -25,6 +25,7 @@ LOCATIONS="
 	utah_report.php?location=ATA
 	id_sunvalley_report.php?location=SV
 	id_brundage_report.php?location=BD
+	nh_report.php?location=MC
 	nm_report.php?location=SA
 	co_report.php?location=PG
 	co_report2.php?location=VA

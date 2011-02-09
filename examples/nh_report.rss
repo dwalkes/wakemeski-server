@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/" version="2.0">
+  <channel>
+    <title>SKI NH Conditions for Attitash</title>
+    <link>http://www.skinh.com</link>
+    <description>SKI NH Conditions for Attitash</description>
+    <pubDate>Wed, 09 Feb 2011 02:19:19 GMT</pubDate>
+    <item>
+      <title>Latest Snow Conditions as of 02/8/11</title>
+      <link>http://www.skinh.com/Snow_Reports.cfm</link>
+      <description>&lt;p&gt;Conditions as of 02/8/11 6:06 AM&lt;/p&gt;&#xD;
+&lt;p&gt;New Snow: 1&lt;br /&gt;&#xD;
+Surface Condition: &lt;a href="http://www.skinh.com/Snow_Reports.cfm#ConditionLegend"&gt;PP&lt;/a&gt;&lt;br /&gt;&#xD;
+Average Base: 40-60&lt;br /&gt;&#xD;
+Trails Open: 77 of 77&lt;br /&gt;&#xD;
+Lifts Open: 6 of 10&lt;br /&gt;&#xD;
+Acres Open: 307 of 307&#xD;
+&lt;/p&gt;</description>
+      <pubDate>Wed, 09 Feb 2011 02:19:19 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
+
+
