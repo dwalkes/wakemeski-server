@@ -32,6 +32,10 @@ function region_create_france()
 			           'flcl', 45.905852,  6.425792,
 			           fr_url('la_clusaz_snow-report.html'),
 			           'http://www.laclusaz.com/hiver-winter11/'),
+			create_loc('Les Contamines',   $eu_base,
+			           'flct', 45.8225, 6.73,
+			           fr_url('les_contamines_snow-report.html'),
+			           'http://www.lescontamines.com/conditions-ski.html'),
 			create_loc('Tignes',           $eu_base,
 			           'ftig', 45.4699822, 6.9076373,
 			           fr_url('tignes_snow-report.html'),
@@ -40,6 +44,10 @@ function region_create_france()
 			           'flda', 45.007553,  6.121801,
 			           fr_url('les_deux_alpes_snow-report.html'),
 			           'http://www.2alpes.com/'),
+			create_loc('St Gervais Mont-Blanc',   $eu_base,
+			           'fstg', 45.893333,  6.713889,
+			           fr_url('st_gervais_mont_blanc_snow-report.html'),
+			           'http://www.saintgervais.com/en/alpine-and-sports/snow-conditions.html'),
 		));
 }
 
