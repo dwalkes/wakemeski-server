@@ -38,7 +38,7 @@ header( "Content-Type: text/plain" );
 	$resort->fresh_source_url = "http://skinewmexico.com/snow_reports/feed.rss";
 		
 	$cache_file = 'nm_'.$location.'.txt';
-	$found_cache = cache_available($cache_file);
+	$found_cache = cache_available($resort,$cache_file);
 	if( !$found_cache )
 	{
 		write_report($resort, $cache_file);

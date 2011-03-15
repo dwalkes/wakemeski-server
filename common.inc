@@ -28,6 +28,29 @@
 
 require_once('weather.inc');
 
+/**
+ * Set to true to turn on debug logging
+ */
+$debug_support = false;
+
+/**
+ * Log a debug message if debug support is configured
+ * @param $string
+ */
+function debug_log($string)
+{
+	global $debug_support;
+	if( $debug_support )
+	{
+		$log_handle = fopen('.cache/debug_log.txt','a');
+		if($log_handle != false)
+		{
+			fwrite($log_handle,$string."\n");
+			fclose($log_handle);
+		}
+	}
+}
+
 
 /**
  * Uses the regular expression to find a value. if the value isn't found
@@ -81,18 +104,66 @@ function int_found($int)
 {
 	return $int != 'n/a';
 }
+
+/**
+* @return a timestamp representing the most recent data found for the resort or
+ *  FALSE if no timestamp could be found
+ */
+function get_report_timestamp($filename)
+{
+	return filemtime($file.".report-date");
+}
+
 /**
  * Returns true if the given cache file is available
+ * @param resort
+ * @param cache file name
  * @param - age default of 7200=(2 hours in seconds)
  */
-function cache_available($file, $age=7200)
+function cache_available($resort,$file, $age=7200)
 {
 	if( $_GET['nocache'] == '1' )
 		return false;
+	$date_format="F j, Y, g:i a";
 
 	$file = '.cache/'.$file;
 	if( is_readable($file))
 	{
+		// Attempt to adjust age if report timestamp indicates yesterday's date
+		$report_ts = get_report_timestamp($file);
+		debug_log('report ' . $resort->name . ' timestamp ' . date($date_format,$report_ts));
+		if( $report_ts != FALSE )
+		{
+			// current time in GMT
+			$gmtime = (int)gmdate('U');
+			// sunrise time in GMT at this resort's location
+			$sunrise_time = date_sunrise($gmtime,SUNFUNCS_RET_TIMESTAMP,$resort->lat,$resort->lon);
+			debug_log('gmtime '.date($date_format,$gmtime));
+			debug_log('sunrise_time ts'.$sunrise_time. ' date ' .date($date_format,$sunrise_time) . ' lat '. $resort->lat . ' lon ' . $resort->lon);
+			/**
+			* Is it before sunrise time in this resort location?
+			*/
+			if( $gmtime < $sunrise_time )
+			{
+				$report_time_array=getdate($report_ts);
+				$gmtime_array=getdate($gmtime);
+				debug_log('report_time_array '. implode(',',$report_time_array) . 'gmtime_array ' . implode(',',$gmtime_array));
+				/**
+				 * if it's yesterdays report and we are waiting for the new one... decrease the
+				 * polling interval from the default to make sure we get the most recent report available.
+				 */
+				if( (($report_time_array['wday']+1)%7) == $gmtime_array['wday'] )
+				{
+					if( $age > 10*60 )
+					{
+						debug_log('cap polling rate at 10 minutes');
+						// cap the polling rate at 10 minutes if we're waiting for new ski data
+						$age = 10*60;
+					}
+				}
+
+			}
+		}
 		//get modification time stamp. If its less than
 		//age, use that copy
 		$mod = filemtime($file);
@@ -137,6 +208,10 @@ function cache_create($resort, $file, $report)
 				$key = $keys[$i];
 				fwrite($fp, $key.' = '.$report[$key]."\n");
 			}
+			/*
+			* Create a cache file with modification time equal to the report date
+			*/
+			touch($file.".report-date", strtotime($report['date']));
 		}
 		else
 		{

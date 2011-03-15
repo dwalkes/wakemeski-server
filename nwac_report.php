@@ -41,7 +41,7 @@ header( "Content-Type: text/plain" );
 	$resort->fresh_source_url = $url;
 	
 	$cache_file = 'nwac_'.$location.'.txt';
-	$found_cache = cache_available($cache_file, 1200); //60*20 = 20 minutes
+	$found_cache = cache_available($resort,$cache_file, 1200); //60*20 = 20 minutes
 	if( !$found_cache )
 	{
 		//report 1 (the current day's info)

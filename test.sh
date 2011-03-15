@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVER=http://bettykrocks.com/skireport/test
+SERVER=http://wakemeski.com/skireport/test
 
 function usage
 {
