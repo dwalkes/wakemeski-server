@@ -44,6 +44,7 @@ header( "Content-Type: text/plain" );
 	}
 
 	cache_dump($cache_file, $found_cache);
+	log_hit('mt_report.php', $location, $found_cache);
 
 function write_report($resort, $cache_file)
 {
@@ -85,7 +86,7 @@ function get_report($resort)
 	{
 		$report['snow.fresh'] = $night;
 		$report['snow.daily'] = "Fresh($night) ";
-	} 
+	}
 	else if(int_found($new))
 	{
 		/*
@@ -94,9 +95,9 @@ function get_report($resort)
 		$report['snow.fresh'] = $new;
 	}
 
-	if( int_found($new) ) 
+	if( int_found($new) )
 	{
-		$report['snow.daily'] .= "24hr($new)"; 
+		$report['snow.daily'] .= "24hr($new)";
 	}
 	$report['snow.units'] = 'inches';
 
