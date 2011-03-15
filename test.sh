@@ -35,6 +35,7 @@ LOCATIONS="
 	vt_report.php?location=KR
 	bc_whistler_report.php?location=WH
 	bc_revelstoke_report.php?location=RS
+	me_sunday_river.php?location=SR
 "
 
 #required properties to ensure get reported
