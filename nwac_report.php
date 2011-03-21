@@ -48,14 +48,15 @@ header( "Content-Type: text/plain" );
 		$lines = get_report_as_lines($url);
 		list($data_start, $columns) = get_report_columns($lines);
 		$report = get_report_summary($lines, $data_start, $columns);
-
+$report2 = array();
+/*TODO support this again.
 		//report 2 (the 48 hour info)
 		$lines = get_report_as_lines($url48);
 		list($data_start, $columns) = get_report_columns($lines);
 		$tmp = $report_date; //the next function will ovewrite the value
 		$report2 = get_report_summary($lines, $data_start, $columns);
 		$report_date = $tmp;
-
+*/
 		cache_summary($resort, $cache_file, $report_date, $report, $report2);
 	}
 
@@ -110,6 +111,26 @@ function cache_summary($resort, $cache_file, $report_date, $report, $report2)
 	cache_create($resort, $cache_file, $summary);
 }
 
+// tries to find the time of the last report
+// some reports can get screwed up and won't show a time on the last line,
+// so we have to do some hackery
+function get_report_time($lines, $index)
+{
+	//now get the current report time from the last row of data
+	while($index > 0)
+	{
+		$parts = preg_split("/\s+/", $lines[$index]);
+		if( count($parts) > 3 )
+		{
+			$hour = $parts[3];
+			if( $hour != 0 ) $hour = $hour/100;
+			$report_date = $parts[1].'/'.$parts[2].' '.$hour.':00';
+			return $report_date;
+		}
+		$index--;
+	}
+}
+
 // returns an array of list(metric, measurment)
 function get_report_summary($lines, $data_start, $columns)
 {
@@ -117,7 +138,8 @@ function get_report_summary($lines, $data_start, $columns)
 
 	//find each row data and parse its column info
 	$report_data = array();
-	for( $i = $data_start; $i < count($lines); $i++ )
+	$max = count($lines);
+	for( $i = $data_start; $i < $max; $i++ )
 	{
 		if( trim($lines[$i]) == '' )
 		{
@@ -134,11 +156,7 @@ function get_report_summary($lines, $data_start, $columns)
 		array_push($report_data, $report_cols);
 	}
 
-	//now get the current report time from the last row of data
-	$parts = preg_split("/\s+/", $lines[$i-1]);
-	$hour = $parts[3];
-	if( $hour != 0 ) $hour = $hour/100;
-	$report_date = $parts[1].'/'.$parts[2].' '.$hour.':00';
+	$report_date = get_report_time($lines, $i-1);
 
 	//build summaries for each column
 	$report = array();
