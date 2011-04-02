@@ -31,6 +31,7 @@ function bc_get_weather_icon($ca_val)
 	switch($ca_val)
 	{
 		case '00': //sunny
+		case '01': //mainly sunny
 			return 'skc';
 		case '02': //sun and clouds
 			return 'sct';

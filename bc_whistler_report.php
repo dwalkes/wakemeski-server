@@ -84,9 +84,11 @@ function get_report_props($report)
 
 	preg_match("/Peak<(.*?)width=\"25%\">(.*?)&deg;/", $report, $matches);
 	$tempPeak = $matches[2];
+	preg_match("/Alpine<\/td><td>(.*?)&deg;/", $report, $matches);
+	$tempAlpine = $matches[1];
 	preg_match("/Village<\/td><td>(.*?)&deg;/", $report, $matches);
 	$tempVillage = $matches[1];
-	$props['temp.readings'] = $tempVillage.' '.$tempPeak;
+	$props['temp.readings'] = $tempVillage.' '.$tempAlpine.' '.$tempPeak;
 
 	get_weather_props(&$props);	
 
@@ -137,7 +139,7 @@ function get_report($resort)
 
 	//strip off some the junk we don't need
 	$contents = strstr($contents, "Last Updated");
-	$idx = strpos($contents, ">Weather</div>");
+	$idx = strpos($contents, ">Grooming</div>");
 	return(substr($contents, 0, $idx));
 }
 
