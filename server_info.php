@@ -34,4 +34,7 @@
 print "server.version = 5\n";
 print "ap.min.supported.version = 1\n";
 print "ap.latest.version = 1\n";
-print "alert.regex = snow accumulation of (\\d+) to (\\d+)";
+//for US resorts
+print "alert.regex = snow accumulation of (\\d+) to (\\d+)\n";
+//for whistler
+print "alert.regex = Accumulations (.*?)(\\d+)\\s?cm\n";

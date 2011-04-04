@@ -95,11 +95,27 @@ function get_report_props($report)
 	return $props;
 }
 
-
+// kind of a hack. we don't get exact timestamps so we hack something
+function get_weather_exact($label)
+{
+	if($label == "Tonight")
+	{
+		//get the next midnight
+		return strtotime("12:00am") + (24*60*60);
+	}
+	else
+	{
+		// these will be days of week like Monday. strtotime
+		// returns the time at midnight. We add 6 hours so that
+		// it will look like "Monday 6:00 am" in the app
+		return strtotime($label) + (6*60*60);
+	}
+}
 
 function get_weather_interval($idx, $label, $offset, $props, $contents)
 {
 	$props['weather.forecast.when.'.$idx] = $label;
+	$props['weather.forecast.when-exact.'.$idx] = get_weather_exact($label);
 
 	//move to the offset for this forecast
 	$contents = substr($contents, $offset);
@@ -116,6 +132,10 @@ function get_weather_interval($idx, $label, $offset, $props, $contents)
 
 function get_weather_props($props)
 {
+	//make sure this is Pacific time in case the PHP server is another timezone
+	//otherwise the strtotime functions won't work for this
+	date_default_timezone_set('America/Los_Angeles');
+
 	$props['weather.url'] = "http://movement.whistlerblackcomb.com/cache/whistler_fx.php";
 	$contents = file_get_contents($props['weather.url']);
 
@@ -131,6 +151,7 @@ function get_weather_props($props)
 	get_weather_interval(0, $matches[1][0][0], $matches[1][0][1], &$props, $contents);
 	get_weather_interval(1, $matches[1][1][0], $matches[1][1][1], &$props, $contents);
 	get_weather_interval(2, $matches[1][2][0], $matches[1][2][1], &$props, $contents);
+	get_weather_interval(3, $matches[1][3][0], $matches[1][3][1], &$props, $contents);
 }
 
 function get_report($resort)
