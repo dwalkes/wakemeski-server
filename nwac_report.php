@@ -38,7 +38,7 @@ header( "Content-Type: text/plain" );
 	$url =  nwac_telemetry_url($resort);
 
 	$resort->fresh_source_url = $url;
-	
+
 	$cache_file = 'nwac_'.$location.'.txt';
 	$found_cache = cache_available($resort,$cache_file, 1200); //60*20 = 20 minutes
 	if( !$found_cache )
@@ -105,7 +105,7 @@ function cache_summary($resort, $cache_file, $report_date, $report, $report2)
 
 	$summary['date'] = $report_date;
 	$summary['snow.units'] = 'inches';
-	$summary['details.url'] = "http://www.nwac.us/products/$resort->code";
+	$summary['details.url'] = nwac_telemetry_url($resort);
 
 	cache_create($resort, $cache_file, $summary);
 }
