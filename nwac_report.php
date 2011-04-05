@@ -35,8 +35,7 @@ header( "Content-Type: text/plain" );
 	$resorts = resorts_nwac_get();
 	$resort = resort_get_location($resorts, $location);
 
-	$url = 'http://www.nwac.us/products/'.$location;
-	$url48 = 'http://www.nwac.us/products/archive/'.$location.'.1';
+	$url =  nwac_telemetry_url($resort);
 
 	$resort->fresh_source_url = $url;
 	
