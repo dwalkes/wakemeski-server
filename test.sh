@@ -55,7 +55,7 @@ FAILED=0
 for loc in ${LOCATIONS}; do
 	output=/tmp/wakemeski.$$
 	echo "= testing: ${SERVER}/${loc}"
-	curl -o $output -s ${SERVER}/${loc}${CACHE}
+	curl -L -o $output -s ${SERVER}/${loc}${CACHE}
 	if [ $? -eq 0 ] ; then
 		[ $VERBOSE ] && cat $output
 		#ensure each required report property is found:
