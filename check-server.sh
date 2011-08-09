@@ -3,7 +3,7 @@
 # runs the wakemeski test script and emails a list of people
 # if an error is encountered
 
-RECIPIENTS="doanac@gmail.com"
+RECIPIENTS="doanac@beadoan.com"
 
 dir=$(dirname $(readlink -f $0))
 
