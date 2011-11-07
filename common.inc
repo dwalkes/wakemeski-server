@@ -55,7 +55,7 @@ function debug_log($string)
 /**
  * Uses the regular expression to find a value. if the value isn't found
  * the value "n/a" will be returned.
- * 
+ *
  * matchidx can be used if the regex has more than one matching pattern
  */
 function find_int($regex, $text, $matchidx=1)
@@ -195,12 +195,12 @@ function cache_create($resort, $file, $report)
 
 			if( !isset($report['weather.url']) )
 				Weather::set_props($resort->lat, $resort->lon, &$report);
-			
+
 			if( !isset($report['location.latitude']) && $resort->lat >0)
 			{
-				$report['location.latitude'] = $resort->lat; 
+				$report['location.latitude'] = $resort->lat;
 				$report['location.longitude'] = $resort->lon;
-			}		
+			}
 
 			$keys = array_keys($report);
 			for($i = 0; $i < count($keys); $i++)
@@ -255,7 +255,7 @@ function create_loc($name, $url_base, $code, $lat=0, $lon=0, $info_url='',
 {
 	return (object)array('name'=>$name, 'url_base'=>$url_base, 'code'=>$code,
 				'info'=>$info_url, 'lat'=>$lat, 'lon'=>$lon,
-				'data'=>$data, 
+				'data'=>$data,
 				/*
 				 * Allocate a member for storing fresh source URL info.  Will
 				 * be populated by each individual script if different than info_url
