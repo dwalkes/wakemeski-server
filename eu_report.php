@@ -37,7 +37,7 @@ header( "Content-Type: text/plain" );
 
 	if( $resort->data )
 		$resort->info = $resort->data;
-		
+
 	$cache_file = 'eu_'.$location.'.txt';
 	$found_cache = cache_available($resort,$cache_file);
 	if( !$found_cache )
@@ -82,13 +82,13 @@ function get_report_props($url, $report)
 	$num_matches = preg_match_all("/<th>Fresh Snow<\/th><td>(\d+)/", $report, $matches, PREG_OFFSET_CAPTURE);
 
 	$fresh = $matches[1][0][0];
-	
-	if( $num_matches == 0 ) 
+
+	if( $num_matches == 0 )
 	{
-		// if no matches were found looking for ints, look for a single - instead.  
+		// if no matches were found looking for ints, look for a single - instead.
 		// This means 0 fresh snow in this report.
 		$num_matches = preg_match_all("/<th>Fresh Snow<\/th><td>-/", $report, $matches, PREG_OFFSET_CAPTURE);
-		if( $num_matches > 0 ) 
+		if( $num_matches > 0 )
 		{
 			$fresh = "0";
 		}
@@ -119,7 +119,7 @@ function get_report_props($url, $report)
 	if( preg_match("/property=\"og:longitude\" content=\"(.*?)\"/", $report, $matches))
 		$props['location.longitude'] = $matches[1];
 
-	preg_match_all("/<p><a href=\"(.*?)\.html/", $report, $matches, PREG_OFFSET_CAPTURE);	
+	preg_match_all("/<p><a href=\"(.*?)\.html/", $report, $matches, PREG_OFFSET_CAPTURE);
 	$page = $matches[1][0][0].".html";
 	//this gives us chamonix_snow-forecast.html, now pull the base from the
 	//report's url
@@ -156,6 +156,7 @@ function get_icon($condition)
 			return 'ovc';
 		case 'partly cloudy': //little sun most cloud
 			return 'bkn';
+		case 'patchy light rain':
 		case 'light rain':
 		case 'rain':
 			return 'ra';
@@ -201,7 +202,7 @@ function get_snow_array($weather, $prop)
 }
 
 function generate_forecast($min, $max,
-                           $wind, $wind_dir, 
+                           $wind, $wind_dir,
                            $snow_low, $snow_high, $snow_level)
 {
 	$forecast = "Low of $min with a high $max. ";
@@ -236,8 +237,8 @@ function get_weather($props)
 	{
 		$props['weather.forecast.when.'.$i] = $day[$i];
 		$props['weather.forecast.when-exact.'.$i] = strtotime($day[$i]);
-		$props['weather.forecast.desc.'.$i] = 
-			generate_forecast($min[$i], $max[$i], $wind[$i], $wind_dir[$i], $snow_low[$i], $snow_high[$i], $snow_level[$i]); 
+		$props['weather.forecast.desc.'.$i] =
+			generate_forecast($min[$i], $max[$i], $wind[$i], $wind_dir[$i], $snow_low[$i], $snow_high[$i], $snow_level[$i]);
 	}
 
 	preg_match_all("/<img alt=\"(.*?)\"/", $weather, $matches);
