@@ -38,6 +38,7 @@ if( $argc != 3 )
 $script = $argv[1];
 $location = $argv[2];
 
+$GLOBALS['HTTP_ENV_VARS'] = 'TESTING';
 $_GET['location'] = $location;
 $_GET['nocache'] = 1; //never use cache
 
