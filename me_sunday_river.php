@@ -27,53 +27,50 @@
  */
 
 require_once('me.inc');
+require_once('reportbase.inc');
 
-header( "Content-Type: text/plain" );
-
-	$location = $_GET['location'];
-
-	$resorts = resorts_me_get();
-	$resort = resort_get_location($resorts, $location);
-
-	$cache_file = 'me_'.$location.'.txt';
-	$found_cache = cache_available($resort,$cache_file);
-	if( !$found_cache )
+class MEReportSunday extends ReportBase
+{
+	public function run($location)
 	{
-		write_report($resort, $cache_file);
+		$resorts = resorts_me_get();
+		$resort = resort_get_location($resorts, $location);
+
+		$cache_file = 'me_'.$location.'.txt';
+		$found_cache = cache_available($resort,$cache_file);
+		if( !$found_cache )
+		{
+			$this->write_report($resort, $cache_file);
+		}
+
+		cache_dump($cache_file, $found_cache);
+		log_hit('me_report.php', $location, $found_cache);
 	}
 
-	cache_dump($cache_file, $found_cache);
-	log_hit('me_report.php', $location, $found_cache);
+	function get_report($resort)
+	{
+		$report = array();
+		$contents = file_get_contents($resort->fresh_source_url);
 
-function write_report($resort, $cache_file)
-{
-	$report = get_report($resort);
-	if( $report )
-		cache_create($resort, $cache_file, $report);
+		$report['snow.units'] = 'inches';
+
+		if( preg_match("/report-title\"><strong>\s+(.*?)\s+</", $contents, $matches) )
+			$report['date']  = $matches[1];
+
+		$report['trails.open'] = find_int("/Trails Open(.*?)(\d+)/", $contents, 2);
+		$report['lifts.open'] = find_int("/Lifts Open(.*?)(\d+)/", $contents, 2);
+		if( preg_match("/Primary Surface(.*?):(.*?)</", $contents, $matches) )
+			$report['snow.conditions'] = strip_tags($matches[2]);
+		$report['snow.total'] = find_int("/Average Base Depth(.*?)(\d+)/", $contents, 2);
+
+		$snow_new = find_int("/New Snow(.*?)(\d+)/", $contents, 2);
+		$snow_week = find_int("/Past 7 Days Snow(.*?)(\d+)/", $contents, 2);
+		$report['snow.fresh'] = $snow_new;
+		$report['snow.daily'] = "Fresh($snow_new) Week($snow_week)";
+
+		return $report;
+	}
 }
-
-function get_report($resort)
-{
-	$report = array();
-	$contents = file_get_contents($resort->fresh_source_url);
-
-	$report['snow.units'] = 'inches';
-
-	if( preg_match("/report-title\"><strong>\s+(.*?)\s+</", $contents, $matches) )
-		$report['date']  = $matches[1];
-
-	$report['trails.open'] = find_int("/Trails Open(.*?)(\d+)/", $contents, 2);
-	$report['lifts.open'] = find_int("/Lifts Open(.*?)(\d+)/", $contents, 2);
-	if( preg_match("/Primary Surface(.*?):(.*?)</", $contents, $matches) )
-		$report['snow.conditions'] = strip_tags($matches[2]);
-	$report['snow.total'] = find_int("/Average Base Depth(.*?)(\d+)/", $contents, 2);
-
-	$snow_new = find_int("/New Snow(.*?)(\d+)/", $contents, 2);
-	$snow_week = find_int("/Past 7 Days Snow(.*?)(\d+)/", $contents, 2);
-	$report['snow.fresh'] = $snow_new;
-	$report['snow.daily'] = "Fresh($snow_new) Week($snow_week)";
-
-	return $report;
-}
-
+$report_class = 'MEReportSunday';
+ReportBase::run_cgi($report_class);
 ?>

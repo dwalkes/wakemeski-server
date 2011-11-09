@@ -27,122 +27,115 @@
  */
 
 require_once('me.inc');
+require_once('reportbase.inc');
 
-header( "Content-Type: text/plain" );
-
-	$location = $_GET['location'];
-
-	$resorts = resorts_me_get();
-	$resort = resort_get_location($resorts, $location);
-
-	$resort->fresh_source_url = "http://feeds.feedburner.com/Sugarloaf/snowreport";
-	
-	$cache_file = 'me_'.$location.'.txt';
-	$found_cache = cache_available($resort,$cache_file);
-	if( !$found_cache )
-	{
-		write_report($resort, $cache_file);
-	}
-
-	cache_dump($cache_file, $found_cache);
-
-	log_hit('me_sugarloaf_report.php', $location, $found_cache);
-
-function write_report($resort, $cache_file)
+class MEReportSugar extends ReportBase
 {
-	$xml = get_location_report($resort);
-	if( $xml )
+	public function run($location)
 	{
-		$props = get_report_props($xml);
-		cache_create($resort, $cache_file, $props);
-	}
-}
+		$resorts = resorts_me_get();
+		$resort = resort_get_location($resorts, $location);
 
-/**
- * Takes the report's XML node and parse the information out into a hashtable
- */
-function get_report_props($report)
-{
-	$props = array();
-	$data = $report->getElementsByTagName('description')->item(0)->nodeValue;
+		$resort->fresh_source_url = "http://feeds.feedburner.com/Sugarloaf/snowreport";
 
-	$props['snow.daily'] = 'n/a';
-	$props['snow.fresh'] = 'n/a';
-
-	$day = find_int("/24-hr Snowfall:<\/b>\s+(\d+)/", $data);
-	$week = find_int("/Past 7 Days Snow:<\/b>\s+(\d+)/", $data);
-
-	if( $day != 'n/a' )
-	{
-		$props['snow.daily'] = "Fresh($day)";
-		$props['snow.fresh'] = $day;
-	}
-
-	if( $week != 'n/a' && $day != 'n/a' )
-		$props['snow.daily'] .= " Week($week)";
-	else if( $week != 'n/a' )
-		$props['snow.daily'] = "Week($week)";
-
-	$props['snow.units'] = 'inches';
-
-	$props['snow.total'] = find_int("/<b>Average Base Depth:<\/b>\s+(\d+)/", $data);
-
-	preg_match_all("/Lifts Open:<\/b>\s+(\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
-	$props['lifts.open'] = $matches[1][0][0];
-	
-	preg_match_all("/Trails Open:<\/b>\s+(\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
-	$props['trails.open'] = $matches[1][0][0];
-
-	preg_match_all("/Primary Surface:<\/b>\s+(.*?)<b/", $data, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$props['snow.conditions'] = $matches[1][0][0];
-
-	preg_match_all("/Comments:<\/b>\s+(.*?)</", $data, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-	{
-		$props['location.comments'] = strip_tags($matches[1][0][0]);
-		//ensure we don't just give an empty comment
-		if( $props['location.comments'] == '--' )
-			unset($props['location.comments']);
-	}
-
-	$date = $report->getElementsByTagName('pubDate')->item(0)->nodeValue;
-	$date = strtotime($date);
-	$props['date'] = date("h:ia M j", $date);
-
-	$props['details.url'] = $report->getElementsByTagName('link')->item(0)->nodeValue;
-
-	return $props;
-}
-
-/**
- * Returns the XML node containing the report for a given location or false
- * if one is not found
- */
-function get_location_report($resort)
-{
-	$dom = get_report_xml($resort);
-
-	$items = $dom->getElementsByTagName('item');
-	for ($i = 0; $i < $items->length; $i++)
-	{
-		$title_node = $items->item($i)->getElementsByTagName('title')->item(0);
-		$title = trim($title_node->firstChild->nodeValue);
-		$name = $resort->name;
-		if(preg_match("/$name/", $title) )
+		$cache_file = 'me_'.$location.'.txt';
+		$found_cache = cache_available($resort,$cache_file);
+		if( !$found_cache )
 		{
-		    return $items->item($i);
+			$this->write_report($resort, $cache_file);
 		}
+
+		cache_dump($cache_file, $found_cache);
+
+		log_hit('me_sugarloaf_report.php', $location, $found_cache);
 	}
 
-	return false;
-}
+	function get_report($resort)
+	{
+		$props = array();
 
-function get_report_xml($resort)
-{
-	$xml = file_get_contents($resort->fresh_source_url);
-	$sxe = simplexml_load_string($xml);
-	return dom_import_simplexml($sxe);
-}
+		$report = self::get_location_report($resort);
+		$data = $report->getElementsByTagName('description')->item(0)->nodeValue;
 
+		$props['snow.daily'] = 'n/a';
+		$props['snow.fresh'] = 'n/a';
+
+		$day = find_int("/24-hr Snowfall:<\/b>\s+(\d+)/", $data);
+		$week = find_int("/Past 7 Days Snow:<\/b>\s+(\d+)/", $data);
+
+		if( $day != 'n/a' )
+		{
+			$props['snow.daily'] = "Fresh($day)";
+			$props['snow.fresh'] = $day;
+		}
+
+		if( $week != 'n/a' && $day != 'n/a' )
+			$props['snow.daily'] .= " Week($week)";
+		else if( $week != 'n/a' )
+			$props['snow.daily'] = "Week($week)";
+
+		$props['snow.units'] = 'inches';
+
+		$props['snow.total'] = find_int("/<b>Average Base Depth:<\/b>\s+(\d+)/", $data);
+
+		preg_match_all("/Lifts Open:<\/b>\s+(\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
+		$props['lifts.open'] = $matches[1][0][0];
+
+		preg_match_all("/Trails Open:<\/b>\s+(\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
+		$props['trails.open'] = $matches[1][0][0];
+
+		preg_match_all("/Primary Surface:<\/b>\s+(.*?)<b/", $data, $matches, PREG_OFFSET_CAPTURE);
+		if( $matches[1][0][0] )
+			$props['snow.conditions'] = $matches[1][0][0];
+
+		preg_match_all("/Comments:<\/b>\s+(.*?)</", $data, $matches, PREG_OFFSET_CAPTURE);
+		if( $matches[1][0][0] )
+		{
+			$props['location.comments'] = strip_tags($matches[1][0][0]);
+			//ensure we don't just give an empty comment
+			if( $props['location.comments'] == '--' )
+				unset($props['location.comments']);
+		}
+
+		$date = $report->getElementsByTagName('pubDate')->item(0)->nodeValue;
+		$date = strtotime($date);
+		$props['date'] = date("h:ia M j", $date);
+
+		$props['details.url'] = $report->getElementsByTagName('link')->item(0)->nodeValue;
+
+		return $props;
+	}
+
+	/**
+	 * Returns the XML node containing the report for a given location or false
+	 * if one is not found
+	 */
+	static function get_location_report($resort)
+	{
+		$dom = self::get_report_xml($resort);
+
+		$items = $dom->getElementsByTagName('item');
+		for ($i = 0; $i < $items->length; $i++)
+		{
+			$title_node = $items->item($i)->getElementsByTagName('title')->item(0);
+			$title = trim($title_node->firstChild->nodeValue);
+			$name = $resort->name;
+			if(preg_match("/$name/", $title) )
+			{
+			    return $items->item($i);
+			}
+		}
+
+		return false;
+	}
+
+	static function get_report_xml($resort)
+	{
+		$xml = file_get_contents($resort->fresh_source_url);
+		$sxe = simplexml_load_string($xml);
+		return dom_import_simplexml($sxe);
+	}
+}
+$report_class = 'MEReportSugar';
+ReportBase::run_cgi($report_class);
 ?>
