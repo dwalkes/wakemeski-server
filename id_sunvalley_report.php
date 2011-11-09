@@ -27,81 +27,74 @@
  */
 
 require_once('id.inc');
+require_once('reportbase.inc');
 
-header( "Content-Type: text/plain" );
-
-	$location = $_GET['location'];
-
-	$resorts = resorts_id_get();
-	$resort = resort_get_location($resorts, $location);
-	
-	$cache_file = 'id_'.$location.'.txt';
-	$found_cache = cache_available($resort,$cache_file);
-	if( !$found_cache )
+class IDReportS extends ReportBase
+{
+	public function run($location)
 	{
-		write_report($resort, $cache_file);
+		$resorts = resorts_id_get();
+		$resort = resort_get_location($resorts, $location);
+
+		$cache_file = 'id_'.$location.'.txt';
+		$found_cache = cache_available($resort,$cache_file);
+		if( !$found_cache )
+		{
+			$this->write_report($resort, $cache_file);
+		}
+
+		cache_dump($cache_file, $found_cache);
+
+		log_hit('id_sunvalley_report.php', $location, $found_cache);
 	}
 
-	cache_dump($cache_file, $found_cache);
-
-	log_hit('id_sunvalley_report.php', $location, $found_cache);
-
-function write_report($resort, $cache_file)
-{
-	$content = get_report($resort);
-	if( $content )
+	/**
+	 * returns the value for the given field in the HTML div
+	 * This report does a nice consistent job formatting the report, so its easy
+	 * to parse.
+	 */
+	static function find_val($report, $field)
 	{
-		$props = get_report_props($content);
-		cache_create($resort, $cache_file, $props);
+		if( !preg_match_all("/$field(.*?)\"value\">(\d+)/", $report, $matches, PREG_OFFSET_CAPTURE) )
+			return FALSE;
+		return $matches[2][0][0];
+	}
+
+	function get_report($resort)
+	{
+		$report = self::download($resort);
+
+		$props = array();
+
+		preg_match_all("/New Snow as of\s+(.*?)</", $report, $matches, PREG_OFFSET_CAPTURE);
+		$props['date'] = $matches[1][0][0];
+
+		$night = self::find_val($report, 'Since 5:30 AM');
+		$day = self::find_val($report, 'Past 24 Hours');
+		$twoday = self::find_val($report, 'Past 48 Hours');
+		$top = self::find_val($report, 'Top');
+		$mid = self::find_val($report, 'Mid');
+		$base = self::find_val($report, 'Base');
+
+		$props['snow.fresh'] = $day;
+		$props['snow.daily'] = "Fresh($night) 24hr($day) 48hr($twoday)";
+		$props['snow.units'] = 'inches';
+
+		$props['snow.total'] = "$base $mid $top";
+
+		return $props;
+	}
+
+	static function download($resort)
+	{
+		$contents = file_get_contents($resort->fresh_source_url);
+
+		//strip off some the leading junk we don't need
+		$contents = strstr($contents, "<h3>Snow Conditions</h3>");
+		//remove eols so we can grep easier
+		return str_replace("\r\n", " ", $contents);
 	}
 }
-
-/**
- * returns the value for the given field in the HTML div
- * This report does a nice consistent job formatting the report, so its easy
- * to parse.
- */
-function find_val($report, $field)
-{
-	if( !preg_match_all("/$field(.*?)\"value\">(\d+)/", $report, $matches, PREG_OFFSET_CAPTURE) )
-		return FALSE;
-	return $matches[2][0][0];
-}
-
-/**
- * Takes the report's HTML and parse the information out into a hashtable
- */
-function get_report_props($report)
-{
-	$props = array();
-
-	preg_match_all("/New Snow as of\s+(.*?)</", $report, $matches, PREG_OFFSET_CAPTURE);
-	$props['date'] = $matches[1][0][0];
-
-	$night = find_val($report, 'Since 5:30 AM');
-	$day = find_val($report, 'Past 24 Hours');
-	$twoday = find_val($report, 'Past 48 Hours');
-	$top = find_val($report, 'Top');
-	$mid = find_val($report, 'Mid');
-	$base = find_val($report, 'Base');
-
-	$props['snow.fresh'] = $day;
-	$props['snow.daily'] = "Fresh($night) 24hr($day) 48hr($twoday)";
-	$props['snow.units'] = 'inches';
-
-	$props['snow.total'] = "$base $mid $top";
-
-	return $props;
-}
-
-function get_report($resort)
-{
-	$contents = file_get_contents($resort->fresh_source_url);
-	
-	//strip off some the leading junk we don't need
-	$contents = strstr($contents, "<h3>Snow Conditions</h3>");
-	//remove eols so we can grep easier
-	return str_replace("\r\n", " ", $contents);
-}
-
+$report_class = 'IDReportS';
+ReportBase::run_cgi($report_class);
 ?>
