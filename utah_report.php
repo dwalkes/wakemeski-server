@@ -36,7 +36,7 @@ header( "Content-Type: text/plain" );
 	$resort = resort_get_location($resorts, $location);
 
 	$resort->fresh_source_url = $resort->info;
-	
+
 	$cache_file = 'ut_'.$location.'.txt';
 	$found_cache = cache_available($resort,$cache_file);
 	if( !$found_cache )
@@ -57,19 +57,23 @@ function get_report_contents($url)
 {
 	$contents = file_get_contents($url);
 
-	$idx1 = strpos($contents, "v-ski_resort_snow_report");
-	$idx2 = strpos($contents, "#v-ski_resort_snow_report");
+	$idx1 = strpos($contents, "<div class=\"snow_total-data");
+	$idx2 = strpos($contents, "<p class=\"more_information\">");
+
 	if( $idx1 === false || $idx2 === false)
 	{
 		print "err.msg=report format changed. server update required\n";
 		/*
 		 *  return an empty string instead of exiting, that way we still write
 		 *  additional common report detail in cache_create
-		 */ 
+		 */
 		return "";
 	}
 
-	return substr($contents, $idx1, $idx2-$idx1);
+	$contents = substr($contents, $idx1, $idx2-$idx1);
+	//the report has fields we grep for that span lines, so remove
+	//EOL's so regex's will work easily
+	return str_replace("\n", "\t", $contents);
 }
 
 function get_report($resort)
@@ -78,26 +82,29 @@ function get_report($resort)
 
 	$data = array();
 
-	preg_match_all("/Updated: <span>(.*)<\/span/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	preg_match_all("/Updated: <span>(.*?)<\/span>/", $contents, $matches, PREG_OFFSET_CAPTURE);
 	$data['date'] = $matches[1][0][0];
 
 	$data['snow.units'] = 'inches';
-	preg_match_all("/Snow Last 24<\/th><td>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
-	$data['snow.daily'] = "Fresh(".$matches[1][0][0].")";
-	$data['snow.fresh'] = $matches[1][0][0];
+	preg_match_all("/last_24 snow_data\">(.*?)value\">(.*?)<\/span>/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['snow.daily'] = "Fresh(".$matches[2][0][0].")";
+	$data['snow.fresh'] = $matches[2][0][0];
 
-	preg_match_all("/Snow Last 48<\/th><td>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
-	$data['snow.daily'] .= " 48hr(".$matches[1][0][0].")";
+	preg_match_all("/last_48 snow_data\">(.*?)value\">(.*?)<\/span>/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['snow.daily'] .= " 48hr(".$matches[2][0][0].")";
 
-	preg_match_all("/Base Depth<\/th><td>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
-	$data['snow.total'] = $matches[1][0][0];
+	preg_match_all("/base_depth snow_data\">(.*?)value\">(.*?)<\/span>/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['snow.total'] = $matches[2][0][0];
 
-	preg_match_all("/<span>(\d+)<\/span>\/<span>(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
-	$data['trails.open'] = $matches[1][0][0];
-	$data['trails.total'] = $matches[2][0][0];
-	$data['lifts.open'] = $matches[1][1][0];
-	$data['lifts.total'] = $matches[2][1][0];
+	preg_match_all("/Runs Open:(.*?)value\">(\d+)\/(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['trails.open'] = $matches[2][0][0];
+	$data['trails.total'] = $matches[3][0][0];
+	preg_match_all("/Lifts Open:(.*?)value\">(\d+)\/(\d+)/", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['lifts.open'] = $matches[2][0][0];
+	$data['lifts.total'] = $matches[3][0][0];
 
+	preg_match_all("/Comments:(.*?)value\">(.*?)<\//", $contents, $matches, PREG_OFFSET_CAPTURE);
+	$data['location.comments'] = $matches[2][0][0];
 	return $data;
 }
 
