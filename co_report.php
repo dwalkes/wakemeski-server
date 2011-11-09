@@ -36,7 +36,7 @@ header( "Content-Type: text/plain" );
 	$resort = resort_get_location($resorts, $location);
 
 	$resort->fresh_source_url = "http://feeds.feedburner.com/snowreport";
-	
+
 	$cache_file = 'co_'.$location.'.txt';
 	$found_cache = cache_available($resort,$cache_file);
 	if( !$found_cache )
@@ -69,7 +69,7 @@ function get_report_props($report)
 	$props['snow.daily'] = 'n/a';
 	$props['snow.fresh'] = 'n/a';
 
-	$day = find_int("/New Snow Last 24 Hours: (\d+)/", $data);
+	$day = find_int("/New Snow Last 24 hours: (\d+)/", $data);
 	$yesterday = find_int("/New Snow Last 48 hours: (\d+)/", $data);
 
 	if( $day != 'n/a' )
@@ -85,17 +85,26 @@ function get_report_props($report)
 
 	$props['snow.units'] = 'inches';
 
-	$props['snow.total'] = find_int("/Mid-Mountain Depth: (\d+)/", $data);
+	$props['snow.total'] = find_int("/Mid Mountain Depth: (\d+)/", $data);
 
 	preg_match_all("/Lifts Open: (\d+)\/(\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
-	$props['lifts.open'] = $matches[1][0][0];
-	$props['lifts.total'] = $matches[2][0][0];
+	if($matches[1][0][0])
+	{
+		$props['lifts.open'] = $matches[1][0][0];
+		$props['lifts.total'] = $matches[2][0][0];
+	}
+	else
+	{
+		preg_match_all("/Lifts Open: (\d+)/", $data, $matches, PREG_OFFSET_CAPTURE);
+		if($matches[1][0][0])
+			$props['lifts.open'] = $matches[1][0][0];
+	}
 
 	preg_match_all("/Surface Conditions: (.*?)<br/", $data, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 		$props['snow.conditions'] = $matches[1][0][0];
 
-	preg_match_all("/Comments:\s+(.*?)<br/", $data, $matches, PREG_OFFSET_CAPTURE);
+	preg_match_all("/Comments:\s+(.*)/", $data, $matches, PREG_OFFSET_CAPTURE);
 	if( $matches[1][0][0] )
 	{
 		$props['location.comments'] = strip_tags($matches[1][0][0]);
