@@ -27,94 +27,99 @@
  */
 
 require_once('nm.inc');
+require_once('reportbase.inc');
 
-header( "Content-Type: text/plain" );
+class NMReport extends ReportBase
+{
 
-	$location = $_GET['location'];
-
-	$resorts = resorts_nm_get();
-	$resort = resort_get_location($resorts, $location);
-
-	$resort->fresh_source_url = "http://skinewmexico.com/snow_reports/feed.rss";
-		
-	$cache_file = 'nm_'.$location.'.txt';
-	$found_cache = cache_available($resort,$cache_file);
-	if( !$found_cache )
+	public function run($location)
 	{
-		write_report($resort, $cache_file);
+		$resorts = resorts_nm_get();
+		$resort = resort_get_location($resorts, $location);
+
+		$resort->fresh_source_url = "http://skinewmexico.com/snow_reports/feed.rss";
+
+		$cache_file = 'nm_'.$location.'.txt';
+		$found_cache = cache_available($resort,$cache_file);
+		if( !$found_cache )
+		{
+			self::write_report($resort, $cache_file);
+		}
+
+		cache_dump($cache_file, $found_cache);
+
+		log_hit('nm_report.php', $location, $found_cache);
 	}
 
-	cache_dump($cache_file, $found_cache);
-
-	log_hit('nm_report.php', $location, $found_cache);
-
-function write_report($resort, $cache_file)
-{
-	$report = get_report($resort);
-	if( $report )
-		cache_create($resort, $cache_file, $report);
-}
-
-function get_report($resort)
-{
-	$contents = file_get_contents($resort->fresh_source_url);
-
-	//each location is in an <item> tag
-	$locations = preg_split("/<item>/", $contents);
-	//the first item is header junk we can ignore
-	array_shift($locations);
-
-	$reports = array();
-	for($i = 0; $i < count($locations); $i++)
+	static function write_report($resort, $cache_file)
 	{
-		$report = get_report_props($locations[$i]);
-		/*
-		 * This report changed in 2010 to use "Angel Fire Resort" and
-		 * list "x-c" (cross country?) after Enchanted Forest.  Also uses "Taos Ski Valley" instead
-		 * of Taos.  Use a strpos check instead of a == to handle these cases
-		 */
-		$pos = strpos($report['location'],$resort->name);
-		if( $pos !== false )
-			return $report;
+		$report = self::get_report($resort);
+		if( $report )
+			cache_create($resort, $cache_file, $report);
+	}
+
+	static function get_report($resort)
+	{
+		$contents = file_get_contents($resort->fresh_source_url);
+
+		//each location is in an <item> tag
+		$locations = preg_split("/<item>/", $contents);
+		//the first item is header junk we can ignore
+		array_shift($locations);
+
+		$reports = array();
+		for($i = 0; $i < count($locations); $i++)
+		{
+			$report = self::get_report_props($locations[$i]);
+			/*
+			 * This report changed in 2010 to use "Angel Fire Resort" and
+			 * list "x-c" (cross country?) after Enchanted Forest.  Also uses "Taos Ski Valley" instead
+			 * of Taos.  Use a strpos check instead of a == to handle these cases
+			 */
+			$pos = strpos($report['location'],$resort->name);
+			if( $pos !== false )
+				return $report;
+		}
+	}
+
+	static function get_report_props($body)
+	{
+		$data = array();
+		preg_match_all("/<h1>(.*)<\/h1/", $body, $matches, PREG_OFFSET_CAPTURE);
+		$data['location'] = $matches[1][0][0];
+
+		preg_match_all("/<pubDate>(.*)<\/pubDate>/", $body, $matches, PREG_OFFSET_CAPTURE);
+		$data['date'] = $matches[1][0][0];
+
+		$data['snow.fresh'] = find_int("/New Natural Snow Last 48 Hours: <b>(\d+)/", $body);
+
+		$data['snow.daily'] = 'n/a';
+		if( $data['snow.fresh'] != 'n/a' )
+			$data['snow.daily'] = 'Fresh('.$data['snow.fresh'].')';
+
+		$data['snow.units'] = 'inches';
+
+		$data['snow.total'] = find_int("/Base Snow Depth \(inches\): <b>(\d+)&quot;/", $body);
+		if( $data['snow.total'] == 'n/a')
+			$data['snow.total'] = find_int("/Base Snow Depth \(inches\): <b>(\d+)-(\d+)&quot;/", $body);
+
+		$data['trails.open'] = find_int("/Trails Open: <b>(\d+)/", $body);
+		$data['lifts.open']  = find_int("/Lifts Open: <b>(\d+)/", $body);
+
+		preg_match_all("/Surface Cond&#58; (.*?)<\/title>/", $body, $matches, PREG_OFFSET_CAPTURE);
+		if( $matches[1][0][0] )
+			$data['snow.conditions'] = $matches[1][0][0];
+
+		//NOTE: The comment (for Sandia Peak) is multi. So the regex is missing it
+		//      We combine things as one line so it will find it
+		$body = str_replace("\n", " ", $body);
+		preg_match_all("/<p>Comments:\s+<b>(.*?)<\/b>/", $body, $matches, PREG_OFFSET_CAPTURE);
+		if( $matches[1][0][0] )
+			$data['location.comments'] = trim($matches[1][0][0]);
+
+		return $data;
 	}
 }
-
-function get_report_props($body)
-{
-	$data = array();
-	preg_match_all("/<h1>(.*)<\/h1/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['location'] = $matches[1][0][0];
-
-	preg_match_all("/<pubDate>(.*)<\/pubDate>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['date'] = $matches[1][0][0];
-
-	$data['snow.fresh'] = find_int("/New Natural Snow Last 48 Hours: <b>(\d+)/", $body);
-
-	$data['snow.daily'] = 'n/a';
-	if( $data['snow.fresh'] != 'n/a' )
-		$data['snow.daily'] = 'Fresh('.$data['snow.fresh'].')';
-
-	$data['snow.units'] = 'inches';
-
-	$data['snow.total'] = find_int("/Base Snow Depth \(inches\): <b>(\d+)&quot;/", $body);
-	if( $data['snow.total'] == 'n/a')
-		$data['snow.total'] = find_int("/Base Snow Depth \(inches\): <b>(\d+)-(\d+)&quot;/", $body);
-
-	$data['trails.open'] = find_int("/Trails Open: <b>(\d+)/", $body);
-	$data['lifts.open']  = find_int("/Lifts Open: <b>(\d+)/", $body);
-
-	preg_match_all("/Surface Cond&#58; (.*?)<\/title>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['snow.conditions'] = $matches[1][0][0];
-
-	//NOTE: The comment (for Sandia Peak) is multi. So the regex is missing it
-	//      We combine things as one line so it will find it
-	$body = str_replace("\n", " ", $body);	
-	preg_match_all("/<p>Comments:\s+<b>(.*?)<\/b>/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['location.comments'] = trim($matches[1][0][0]);
-
-	return $data;
-}
-
+$report_class = 'NMReport';
+ReportBase::run_cgi($report_class);
 ?>
