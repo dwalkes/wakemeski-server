@@ -42,27 +42,18 @@ class MTReport extends ReportBase
 		$found_cache = cache_available($resort,$cache_file);
 		if( !$found_cache )
 		{
-			write_report($resort, $cache_file);
+			$this->write_report($resort, $cache_file);
 		}
 
 		cache_dump($cache_file, $found_cache);
 		log_hit('mt_report.php', $location, $found_cache);
 	}
 
-	static function write_report($resort, $cache_file)
-	{
-		$report = self::get_report($resort);
-		if( $report )
-			cache_create($resort, $cache_file, $report);
-	}
-
-
-
 	/**
 	 * Grabs the RSS feed turns the values for the given report into a hash of:
 	 *  loc => {snow.daily='24hr, 48hr', snow.total="total", ..}
 	 */
-	static function get_report($resort)
+	function get_report($resort)
 	{
 		$contents = file_get_contents($resort->fresh_source_url);
 

@@ -43,7 +43,7 @@ class NMReport extends ReportBase
 		$found_cache = cache_available($resort,$cache_file);
 		if( !$found_cache )
 		{
-			self::write_report($resort, $cache_file);
+			$this->write_report($resort, $cache_file);
 		}
 
 		cache_dump($cache_file, $found_cache);
@@ -51,14 +51,7 @@ class NMReport extends ReportBase
 		log_hit('nm_report.php', $location, $found_cache);
 	}
 
-	static function write_report($resort, $cache_file)
-	{
-		$report = self::get_report($resort);
-		if( $report )
-			cache_create($resort, $cache_file, $report);
-	}
-
-	static function get_report($resort)
+	function get_report($resort)
 	{
 		$contents = file_get_contents($resort->fresh_source_url);
 
