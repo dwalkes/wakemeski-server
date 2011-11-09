@@ -111,7 +111,7 @@ function int_found($int)
  */
 function get_report_timestamp($filename)
 {
-	return filemtime($file.".report-date");
+	return filemtime($filename.".report-date");
 }
 
 /**
