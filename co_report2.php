@@ -28,90 +28,86 @@
 
 require_once('co.inc');
 require_once('nv.inc');
+require_once('reportbase.inc');
 
-header( "Content-Type: text/plain" );
-
-	$location = $_GET['location'];
-	
-	$resorts = array_merge(resorts_co_get(),resorts_nv_co_report2_get());
-	
-	$resort = resort_get_location($resorts, $location);
-
-	$resort->fresh_source_url = "http://snow.com/rssfeeds/snowreports.aspx";
-	
-	$cache_file = 'co2_'.$location.'.txt';
-	$found_cache = cache_available($resort,$cache_file);
-	if( !$found_cache )
+class COReport2 extends ReportBase
+{
+	public function run($location)
 	{
-		write_report($resort, $cache_file);
+		$resorts = array_merge(resorts_co_get(),resorts_nv_co_report2_get());
+
+		$resort = resort_get_location($resorts, $location);
+
+		$resort->fresh_source_url = "http://snow.com/rssfeeds/snowreports.aspx";
+
+		$cache_file = 'co2_'.$location.'.txt';
+		$found_cache = cache_available($resort,$cache_file);
+		if( !$found_cache )
+		{
+			$this->write_report($resort, $cache_file);
+		}
+
+		cache_dump($cache_file, $found_cache);
+
+		log_hit('co_report2.php', $location, $found_cache);
 	}
 
-	cache_dump($cache_file, $found_cache);
-
-	log_hit('co_report2.php', $location, $found_cache);
-
-function write_report($resort, $cache_file)
-{
-	$report = get_report($resort);
-	if( $report )
-		cache_create($resort, $cache_file, $report);
-}
-
-function get_report($resort)
-{
-	global $resorts;
-	$contents = file_get_contents($resort->fresh_source_url);
-
-	//each location is in an <item> tag
-	$locations = preg_split("/<item>/", $contents);
-	//the first item is header junk we can ignore
-	array_shift($locations);
-
-	for($i = 0; $i < count($locations); $i++)
+	function get_report($resort)
 	{
-		$report = get_report_props($locations[$i]);
-		if( $report['location'] == $resort->name )
-			return $report;
+		global $resorts;
+		$contents = file_get_contents($resort->fresh_source_url);
+
+		//each location is in an <item> tag
+		$locations = preg_split("/<item>/", $contents);
+		//the first item is header junk we can ignore
+		array_shift($locations);
+
+		for($i = 0; $i < count($locations); $i++)
+		{
+			$report = self::get_report_props($locations[$i]);
+			if( $report['location'] == $resort->name )
+				return $report;
+		}
+
+		return false;
 	}
 
-	return false;
+	static function get_report_props($body)
+	{
+		$data = array();
+		preg_match_all("/<title>(.*) Resort Snow Report - (.*) - (.*)<\/title/", $body, $matches, PREG_OFFSET_CAPTURE);
+		$data['location'] = $matches[1][0][0];
+		$data['date'] = $matches[3][0][0];
+
+		preg_match_all("/New Snow in last 24 hours:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+		$data['snow.daily'] = "Fresh(".$matches[1][0][0].")";
+		$data['snow.fresh'] = $matches[1][0][0];
+		$data['snow.units'] = 'inches';
+
+		preg_match_all("/New Snow in last 48 hours:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+		$data['snow.daily'] .= " 48hr(".$matches[1][0][0].")";
+
+		preg_match_all("/Mid-Mountain:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+		if( $matches[1][0][0] )
+			$data['snow.total'] = $matches[1][0][0];
+		else
+			$data['snow.total'] = '?';
+
+		preg_match_all("/Runs Open (\d+) of (\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+		$data['trails.open'] = $matches[1][0][0];
+		$data['trails.total'] = $matches[2][0][0];
+
+		preg_match_all("/Lifts Open (\d+) of (\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
+		$data['lifts.open'] = $matches[1][0][0];
+		$data['lifts.total'] = $matches[2][0][0];
+
+		preg_match_all("/Snow Conditions: (.*?)&lt;/", $body, $matches, PREG_OFFSET_CAPTURE);
+		if( $matches[1][0][0] )
+			$data['snow.conditions'] = $matches[1][0][0];
+
+		return $data;
+	}
 }
-
-function get_report_props($body)
-{
-	$data = array();
-	preg_match_all("/<title>(.*) Resort Snow Report - (.*) - (.*)<\/title/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['location'] = $matches[1][0][0];
-	$data['date'] = $matches[3][0][0];
-
-	preg_match_all("/New Snow in last 24 hours:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['snow.daily'] = "Fresh(".$matches[1][0][0].")";
-	$data['snow.fresh'] = $matches[1][0][0];
-	$data['snow.units'] = 'inches';
-
-	preg_match_all("/New Snow in last 48 hours:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['snow.daily'] .= " 48hr(".$matches[1][0][0].")";
-
-	preg_match_all("/Mid-Mountain:\s+(\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['snow.total'] = $matches[1][0][0];
-	else
-		$data['snow.total'] = '?';
-
-	preg_match_all("/Runs Open (\d+) of (\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['trails.open'] = $matches[1][0][0];
-	$data['trails.total'] = $matches[2][0][0];
-
-	preg_match_all("/Lifts Open (\d+) of (\d+)/", $body, $matches, PREG_OFFSET_CAPTURE);
-	$data['lifts.open'] = $matches[1][0][0];
-	$data['lifts.total'] = $matches[2][0][0];
-
-	preg_match_all("/Snow Conditions: (.*?)&lt;/", $body, $matches, PREG_OFFSET_CAPTURE);
-	if( $matches[1][0][0] )
-		$data['snow.conditions'] = $matches[1][0][0];
-
-	return $data;
-}
-
-
+$report_class = 'COReport2';
+ReportBase::run_cgi($report_class);
 ?>
