@@ -36,7 +36,7 @@ header( "Content-Type: text/plain" );
 	$resort = resort_get_location($resorts, $location);
 
 	$resort->fresh_source_url = $resort->data;
-	
+
 	$cache_file = 'bc_'.$location.'.txt';
 	$found_cache = cache_available($resort,$cache_file);
 	if( !$found_cache )
@@ -69,28 +69,23 @@ function get_report_props($resort, $report)
 
 	$props['details.url'] = $resort->fresh_source_url;
 
-	preg_match("/updated (.*?)</", $report, $matches);
+	preg_match("/Timestamp: (.*?)</", $report, $matches);
 	$props['date'] = $matches[1];
 
-	$new = find_int("/Overnight(.*?)(\d+)\s+cm/", $report, 2);
-	$hr24 = find_int("/Last 24 Hours(.*?)(\d+)\s+cm/", $report, 2);
-	$hr48 = find_int("/Last 48 Hours(.*?)(\d+)\s+cm/", $report, 2);
-	$week = find_int("/Last 7 Days(.*?)(\d+)\s+cm/", $report, 2);
+	preg_match_all("/emph'>(.*?)\s+cm/", $report, $matches);
 
-	$props['snow.fresh'] = $hr24;
-	$props['snow.daily'] = "Fresh($new) 24hr($hr24) 48hr($hr48) week($week)";
+	$props['snow.fresh'] = $matches[1][0];
+	$props['snow.daily'] = "Hourly(".$matches[1][1].") 24hr(".$matches[1][0].")";
 
-	$props['snow.total'] = find_int("/Base Depth(.*?)(\d+)\s+cm/", $report, 2);
+	$props['snow.total'] = $matches[1][2];
 
-	$props['temp.readings'] = find_int("/Mountain Top Temp: <\/strong>&nbsp;(.*?)C/", $report);
-	
-	if( preg_match("/Runs Open:(.*?)(\d+)\/(\d+)/", $report, $matches) )
-	{
-		$props['trails.open'] = $matches[2];
-		$props['trails.total'] = $matches[3];
-	}
+	preg_match("/'giant'>(.*?)° C/", $report, $matches);
+	$props['temp.readings'] = $matches[1];
 
-	get_weather_props(&$props);	
+	//TODO? $props['trails.open'] = $matches[2];
+	//TODO? $props['trails.total'] = $matches[3];
+
+	get_weather_props(&$props);
 
 	return $props;
 }
@@ -124,7 +119,7 @@ function get_weather_icon($report, $props)
 function get_weather_report($props)
 {
 	$contents = file_get_contents($props['weather.url']);
-	
+
 	//its easier to parse if one line
 	return str_replace("\n", "\t", $contents);
 }
@@ -132,10 +127,13 @@ function get_weather_report($props)
 function get_report($resort)
 {
 	$contents = file_get_contents($resort->fresh_source_url);
-
-	//the report has fields we grep for that span lines, so remove
-	//EOL's so regex's will work easily
-	return str_replace("\n", "\t", $contents);
+	$idx = strpos($contents, "Timestamp:");
+	if( $idx !== false )
+	{
+		$idx2 = strpos($contents, "</div>", $idx);
+		$contents = substr($contents, $idx, $idx2-$idx);
+	}
+	return $contents;
 }
 
 ?>

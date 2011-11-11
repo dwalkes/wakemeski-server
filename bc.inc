@@ -11,9 +11,8 @@ function region_create_bc()
 			           'http://www.whistlerblackcomb.com/weather/snowreport/index.htm'),
 			create_loc('Revelstoke',   'bc_revelstoke_report.php',
 			           'RS', 50.954167, -118.154167,
-			           'http://www.revelstokemountainresort.com/mobile/',
-			           'http://www.revelstokemountainresort.com/mobile/Snow-Report.aspx'
-			),
+				   'http://www.revelstokemountainresort.com/',
+				   'http://www.revelstokemountainresort.com/conditions/snow-report'),
 		));
 }
 
@@ -57,6 +56,6 @@ function bc_get_weather_icon($ca_val)
 		case '37': //night cloudy
 			return 'ovc';
 	}
-	
+
 	return $ca_val;
 }
