@@ -3,7 +3,8 @@
 abstract class ReportBase
 {
 	public static function run_cgi($class) {
-		if( array_key_exists('HTTP_ENV_VARS', $GLOBALS) ) {
+		global $MULTI_REPORT;
+		if( !$MULTI_REPORT && array_key_exists('HTTP_ENV_VARS', $GLOBALS) ) {
 			header( "Content-Type: text/plain" );
 			if( array_key_exists('location', $_GET) ) {
 				$obj = new $class();
