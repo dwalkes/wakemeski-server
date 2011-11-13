@@ -146,6 +146,7 @@ class EUReport extends ReportBase
 		switch(strtolower($condition))
 		{
 			case 'sunny/clear':
+			case 'clear skies':
 				return 'skc';
 			case 'fair': //cloud with sun
 				return 'sct';
