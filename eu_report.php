@@ -157,6 +157,7 @@ class EUReport extends ReportBase
 				return 'blizzard';
 			case 'cloudy':
 				return 'ovc';
+			case 'partly cloudy skies':
 			case 'partly cloudy': //little sun most cloud
 				return 'bkn';
 			case 'patchy light rain':
