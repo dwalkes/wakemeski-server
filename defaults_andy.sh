@@ -3,6 +3,6 @@
 
 USER=bettykro
 SERVER=bettykrocks.com
-LOC=/home/bettykro/www/skireport/
-RECIPIENTS=doanac@gmail.com
+LOC=/home/bettykro/skireport-site/
+RECIPIENTS=doanac@beadoan.com
 SERVER_URL="http://bettykrocks.com/skireport"
