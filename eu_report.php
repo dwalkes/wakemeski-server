@@ -160,6 +160,7 @@ class EUReport extends ReportBase
 			case 'partly cloudy skies':
 			case 'partly cloudy': //little sun most cloud
 				return 'bkn';
+			case 'moderate rain at times':
 			case 'patchy light rain':
 			case 'light rain':
 			case 'rain':
