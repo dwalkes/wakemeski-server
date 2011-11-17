@@ -2,7 +2,7 @@
 /*
   * Copyright (c) 2008 nombre.usario@gmail.com
   * Copyright (c) 2010 Dan Walkes
-  * 
+  *
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without
@@ -27,10 +27,10 @@
   * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
   * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   */
- 
- 
+
+
  header( "Content-Type: text/plain" );
- 
+
 print "server.version = 5\n";
 print "ap.min.supported.version = 1\n";
 print "ap.latest.version = 1\n";
@@ -38,3 +38,4 @@ print "ap.latest.version = 1\n";
 print "alert.regex = snow accumulation of (\\d+) to (\\d+)\n";
 //for whistler
 print "alert.regex = Accumulations (.*?)(\\d+)\\s?cm\n";
+print "alert.regex = Accumulations: (.*?)(\\d+)\\s?cm\n";
