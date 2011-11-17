@@ -69,6 +69,7 @@ header( "Content-Type: text/plain" );
 	else
 	{
 		$region = $_GET['region'];
+		$region = urldecode($region);
 		if( !$region )
 			show_regions();
 		else
