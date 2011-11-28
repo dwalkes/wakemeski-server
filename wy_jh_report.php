@@ -84,6 +84,10 @@ class WYReportJH extends ReportBase
 		{
 			$props['date'] = $matches[2]." ".$matches[1];
 		}
+		else if(preg_match("/Weather \/ Snow Report<\/h1><[^>]+>[^\w]*([^<]+)<small>.*Reported as of:\s*(\d)(\d+\s*[A-Z][A-Z])/s", $content, $matches))
+		{
+			$props['date'] = $matches[2].":".$matches[3]." ".$matches[1];
+		}
 
 		$props['snow.fresh'] = self::find_snow_value("Since lifts closed",$content);
 		$props['snow.total'] = self::find_snow_value("Snow Depth", $content);
